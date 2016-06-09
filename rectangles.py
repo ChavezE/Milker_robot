@@ -43,9 +43,9 @@ linedSquares = []
 index = 0
 
 ######### VERTICAL SQUARES ##################
-# all vertical aligned squares are stored in linedSquares
+""" all vertical aligned squares are stored in linedSquares
 # criteria of comparaison is the center of rectangle
-# upper left coodenates are stored in lined squares as subArrays
+upper left coodenates are stored in lined squares as subArrays """
 for i in range(0,total):
 	xi,yi,wi,hi = cv2.boundingRect(allSquares[i])
 	centeri = (xi + wi) / 2   # getting 1st center
@@ -54,7 +54,8 @@ for i in range(0,total):
 		xj,yj,wj,hj = cv2.boundingRect(allSquares[j])
 		centerj = (xj + wj)/2 	# finding 2nd center
 		if abs(centerj - centeri) < 5:
-			if (linedSquares.count([xj,yj])) < 1: # if already in list do not insert
+			# if already in list do not insert
+			if (linedSquares.count([xj,yj])) < 1:
 				linedSquares.insert(0,[xj,yj])
 				index = index + 1
 				foundOthers = True

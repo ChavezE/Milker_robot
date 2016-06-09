@@ -1,5 +1,6 @@
 # Here we go...
 # watching change 
+# este es el primer cambio
 import cv2
 import numpy as np 
 

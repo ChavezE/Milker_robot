@@ -1,8 +1,9 @@
+# Emibas.py
 # Here we go...
-# watching change 
+# watching change
 # este es el primer cambio
 import cv2
-import numpy as np 
+import numpy as np
 
 
 filename = 'image.jpg'
@@ -33,7 +34,7 @@ for cnt in range(0,total):
 	x,y,w,h = cv2.boundingRect(contours[cnt])
 	rect_area = w*h
 	extent = float(area)/rect_area
-	if (extent >= 0.8):   # tolerance 
+	if (extent >= 0.8):   # tolerance
 		img = cv2.drawContours(imgOriginal, contours, cnt, (0,255,0), 2)
 		allSquares.insert(0,contours[cnt])
 
@@ -46,15 +47,15 @@ index = 0
 ######### VERTICAL SQUARES ##################
 # all vertical aligned squares are stored in linedSquares
 # criteria of comparaison is the center of rectangle
-# upper left coodenates are stored in lined squares as subArrays 
+# upper left coodenates are stored in lined squares as subArrays
 for i in range(0,total):
 	xi,yi,wi,hi = cv2.boundingRect(allSquares[i])
 	centeri = (xi + wi) / 2   # getting 1st center
 	foundOthers = False
 	for j in range(i+1,total):
-		xj,yj,wj,hj = cv2.boundingRect(allSquares[j]) 
+		xj,yj,wj,hj = cv2.boundingRect(allSquares[j])
 		centerj = (xj + wj)/2 	# finding 2nd center
-		if abs(centerj - centeri) < 5: 
+		if abs(centerj - centeri) < 5:
 			if (linedSquares.count([xj,yj])) < 1: # if already in list do not insert
 				linedSquares.insert(0,[xj,yj])
 				index = index + 1
@@ -63,7 +64,7 @@ for i in range(0,total):
 		linedSquares.insert(0,[xi,yi])
 		index = index + 1
 
-# showing squares 
+# showing squares
 for i in range(0,index):
 	x = linedSquares[i][0]
 	y = linedSquares[i][1]
@@ -76,5 +77,3 @@ print index
 print len(linedSquares)
 print ''
 cv2.destroyAllWindows()
-
-

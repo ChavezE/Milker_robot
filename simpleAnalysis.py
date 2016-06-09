@@ -1,6 +1,3 @@
-# simple analizis del sebas 
-# otro camnbio
-
 import cv2
 import numpy as np
 

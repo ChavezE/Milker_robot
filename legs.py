@@ -1,6 +1,21 @@
 # This class would store rectangles
 # and sort them to be used as vertical
 # indicators
+def upperLeftCorner(list1):
+	# 'epsilon' is the error range in pixels
+    epsilon = 0
+	# The function "sorted" sorts a multidimensional list. Depending on x[0]
+	# is the index that you use to compare
+    list1 = sorted(list1, key=lambda x: x[0], reverse=False)
+	# Now that we have the list ordered from left to right we need to find the
+	# coordinate that is closest to the origin (0,0)
+    for i in range(0, len(list1)):
+        if abs(list1[0][0] - list1[i][0]) <= epsilon and list1[0][1] > list1[i][1]:
+            temp = list1[0]
+            list1[0]=list1[i]
+            list1[i]=temp
+    return list1[0]
+
 class Mylegs:
 	""" squares here """
 
@@ -15,16 +30,10 @@ class Mylegs:
 		#
 
 		# looking for left-est square
-		mostLeft = listaCuadros[0] # auxiliar variable 
-		for i in range(0,len(listaCuadros)): # first find the left
-		 	if (listaCuadros[i][0] <= mostLeft[0]):
-		 		mostLeft = listaCuadros[i]
-		for i in range(0,len(listaCuadros)): # now find the upper
-			if( listaCuadros[i][0] <= mostLeft[0] and listaCuadros[i][1] <= mostLeft[1]):
-				mostLeft = listaCuadros[i]
+		mostLeft = upperLeftCorner(listaCuadros)
 
 		self.leftLeg.insert(0,mostLeft)
-		self.contLeftLeg = self.contLeftLeg + 1 
+		self.contLeftLeg = self.contLeftLeg + 1
 
 
 	def findLeftLeg(self, listaCuadros):
@@ -36,6 +45,9 @@ class Mylegs:
 			if(abs(listaCuadros[i][0] - self.leftLeg[0]) < epsilon):
 				self.leftLeg[self.contLeftLeg] = listaCuadros[i][0]
 				self.contLeftLeg += 1
+
+
+
 
 
 lista = [[2,2],[2,3],[3,1],[7,0],[2,0]]

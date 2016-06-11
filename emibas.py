@@ -18,14 +18,28 @@ class Mylegs:
 		self.contRightLeg = 0 # This will tell us the size of the list 'rightLeg'
 		#
 
-		# looking for left-est square
+		# ---Filling up leftLeg---
 
-		listaCuadros = self.upperLeftCorner(listaCuadros) # listaCuadros is sorted in x
+		# listaCuadros is sorted with the upperLeftCorner in the index '0'
+		listaCuadros = self.upperLeftCorner(listaCuadros)
 		mostLeft = listaCuadros[0]
+		# insert the mostLeft coordinate as the first element of the left leg
 		self.leftLeg.insert(0,mostLeft)
+		# insert all of the other coords that build up the left leg
 		self.findLeftLeg(listaCuadros)
+		# At last, the leftLeg coords are sorted from top to bottom
 		self.leftLeg = sorted(self.leftLeg, key=lambda x: x[1],reverse=False)
 		self.contLeftLeg = len(self.leftLeg)
+
+		# ---Filling up leftLeg---
+
+		# is pretty much the same process as filling up leftLeg 
+		listaCuadros = self.upperRightCorner(listaCuadros)
+		mostRight = listaCuadros[0]
+		self.rightLeg.insert(0, mostRight)
+		self.findRightLeg(listaCuadros)
+		self.rightLeg = sorted(self.rightLeg, key=lambda x: x[1],reverse=False)
+		self.contRightLeg = len(self.rightLeg)
 
 
 	def findLeftLeg(self, listaCuadros):
@@ -57,6 +71,34 @@ class Mylegs:
 					break
 		return list1
 
+		def findRightLeg(self, listaCuadros):
+			# Define 'epsilon' which is the tolerance in px to find the other
+			# coordinates that form the right Leg
+			epsilon = 10
+			# Looking for the coordinates that have the same 'x' coordinate
+			for i in range(1, len(listaCuadros)):
+				if(abs(listaCuadros[i][0] - self.rightLeg[0][0]) < epsilon):
+					self.rightLeg.insert(len(self.rightLeg),listaCuadros[i])
+				else:
+					break
+
+		def upperRightCorner(self,list1):
+			# 'epsilon' is the error range in pixels
+			epsilon = 10
+			# The function "sorted" sorts a multidimensional list. Depending on x[0]
+			# is the index that you use to compare
+			list1 = sorted(list1, key=lambda x: x[0], reverse=True)
+			# Now that we have the list ordered from right to left we need to find the
+			# coordinate that is the top of the right leg
+			for i in range(0, len(list1)):
+				if abs(list1[0][0] - list1[i][0]) <= epsilon:
+					if list1[0][1] > list1[i][1]:
+						temp = list1[0]
+						list1[0]=list1[i]
+						list1[i]=temp
+					else:
+						break
+			return list1
 
 
 

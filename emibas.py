@@ -71,34 +71,34 @@ class Mylegs:
 					break
 		return list1
 
-		def findRightLeg(self, listaCuadros):
-			# Define 'epsilon' which is the tolerance in px to find the other
-			# coordinates that form the right Leg
-			epsilon = 10
-			# Looking for the coordinates that have the same 'x' coordinate
-			for i in range(1, len(listaCuadros)):
-				if(abs(listaCuadros[i][0] - self.rightLeg[0][0]) < epsilon):
-					self.rightLeg.insert(len(self.rightLeg),listaCuadros[i])
+	def findRightLeg(self, listaCuadros):
+		# Define 'epsilon' which is the tolerance in px to find the other
+		# coordinates that form the right Leg
+		epsilon = 10
+		# Looking for the coordinates that have the same 'x' coordinate
+		for i in range(1, len(listaCuadros)):
+			if(abs(listaCuadros[i][0] - self.rightLeg[0][0]) < epsilon):
+				self.rightLeg.insert(len(self.rightLeg),listaCuadros[i])
+			else:
+				break
+
+	def upperRightCorner(self,list1):
+		# 'epsilon' is the error range in pixels
+		epsilon = 10
+		# The function "sorted" sorts a multidimensional list. Depending on x[0]
+		# is the index that you use to compare
+		list1 = sorted(list1, key=lambda x: x[0], reverse=True)
+		# Now that we have the list ordered from right to left we need to find the
+		# coordinate that is the top of the right leg
+		for i in range(0, len(list1)):
+			if abs(list1[0][0] - list1[i][0]) <= epsilon:
+				if list1[0][1] > list1[i][1]:
+					temp = list1[0]
+					list1[0]=list1[i]
+					list1[i]=temp
 				else:
 					break
-
-		def upperRightCorner(self,list1):
-			# 'epsilon' is the error range in pixels
-			epsilon = 10
-			# The function "sorted" sorts a multidimensional list. Depending on x[0]
-			# is the index that you use to compare
-			list1 = sorted(list1, key=lambda x: x[0], reverse=True)
-			# Now that we have the list ordered from right to left we need to find the
-			# coordinate that is the top of the right leg
-			for i in range(0, len(list1)):
-				if abs(list1[0][0] - list1[i][0]) <= epsilon:
-					if list1[0][1] > list1[i][1]:
-						temp = list1[0]
-						list1[0]=list1[i]
-						list1[i]=temp
-					else:
-						break
-			return list1
+		return list1
 
 
 
@@ -171,10 +171,13 @@ for i in range(0,index):
 
 patas = Mylegs(linedSquares)
 pAux = patas.contLeftLeg
-x = patas.leftLeg[0][0]
-y = patas.leftLeg[0][1]
+xi = patas.leftLeg[0][0]
+yi = patas.leftLeg[0][1]
+xd = patas.rightLeg[0][0]
+yd = patas.rightLeg[0][1]
 print patas.leftLeg
-img = cv2.circle(img,(x,y),5,(0,255,0),-1)
+img = cv2.circle(img,(xi,yi),5,(0,255,0),-1)
+img = cv2.circle(img,(xd,yd),5,(0,255,0),-1)
 
 cv2.imshow('o',img)
 cv2.waitKey(0)

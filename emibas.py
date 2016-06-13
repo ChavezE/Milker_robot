@@ -33,7 +33,7 @@ class Mylegs:
 
 		# ---Filling up leftLeg---
 
-		# is pretty much the same process as filling up leftLeg 
+		# is pretty much the same process as filling up leftLeg
 		listaCuadros = self.upperRightCorner(listaCuadros)
 		mostRight = listaCuadros[0]
 		self.rightLeg.insert(0, mostRight)
@@ -148,12 +148,12 @@ index = 0
 upper left coodenates are stored in lined squares as subArrays """
 for i in range(0,total):
 	xi,yi,wi,hi = cv2.boundingRect(allSquares[i])
-	centeri = (xi + wi) / 2   # getting 1st center
+	# centeri = (xi + wi) / 2    getting 1st center
 	foundOthers = False
 	for j in range(i+1,total):
 		xj,yj,wj,hj = cv2.boundingRect(allSquares[j])
-		centerj = (xj + wj)/2 	# finding 2nd center
-		if abs(centerj - centeri) < 5:
+		# centerj = (xj + wj)/2 	# finding 2nd center
+		if abs(xj - xi) < 5:
 			# if already in list do not insert
 			if (linedSquares.count([xj,yj])) < 1:
 				linedSquares.insert(0,[xj,yj])

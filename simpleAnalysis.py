@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 # ------ GLOBAL VARIABLES ---------
-fileName = 'image9.jpg'  # In case we are analyzing a single image, the name is stored here
+fileName = 'image2.jpg'  # In case we are analyzing a single image, the name is stored here
 bestThres = 0  # Stores the best threshold value for binarization on the image
 bestLen = 0    # Stores the maximum amount of squares found in the image
 actThresValue = 0    # Stores the threshold value which has the greatest amount of squares
@@ -74,15 +74,15 @@ def findContours(img):
       cv2.CHAIN_APPROX_SIMPLE)
    return contours
 
-def sortList(l =[], index): # This functions sorts a multivaraible list depending on the index specified
+def sortList(index,l =[]): # This functions sorts a multivaraible list depending on the index specified
    l = sorted(l, key=lambda x: x[index],reverse=False) 
    return l
 
-def findMedian(l=[],index):
-   if len(l) % 2 == 0:     # The length of the list is even
+def findMedian(index,l=[]):
+   if (len(l) % 2) != 0:     # The length of the list is even
       return l[len(l)/2][index]
-   else              # The lenght of the list is odd
-      return (l[len(l)/2][index] + l[len(l)/2 + 1][index])
+   else:              # The lenght of the list is odd
+      return (l[len(l)/2][index] + l[len(l)/2 + 1][index])/2
 # ---------------------------------
 
 # -----NOW, MAKE THE MAGIC HAPPEN-----
@@ -90,7 +90,7 @@ def findMedian(l=[],index):
 # Load the image...
 imgO = loadingImage(fileName)
 # Clean the image ...
-imgC = clearImage(imgO, 50)
+imgC = clearImage(imgO, 65)
 # Find contours ...
 contours = findContours(imgC)
 # Now, analyze the contours that we've found
@@ -104,20 +104,21 @@ for cnt in contours:
    h = rect[1][1]
    box = cv2.boxPoints(rect)
    box = np.int0(box)
-   x = np.int0(x)
-   y = np.int0(y)
    rect_area = w*h
    if(rect_area>0):
       extent = float(area/rect_area)
       xT,yT,wT,hT = cv2.boundingRect(cnt)
       aspect_ratio = float(wT)/hT
-      if (extent >= 0.7 and aspect_ratio >= 0.75):   # tolerance
+      if (extent >= 0.7 ):   # tolerance and aspect_ratio >= 0.75
          cowSquares.insert(0,[x,y,w,h,extent,area,aspect_ratio])
-         im = cv2.drawContours(imgO,[box],0,(255,0,0),1)
+         im = cv2.drawContours(imgO,[box],0,(0,0,255),1)
          #cv2.circle(imgO, (x,y), 3, (0,0,255), -1)
-cowSquares = sorted(cowSquares, key=lambda x: x[1],reverse=False) 
+cowSquares = sorted(cowSquares, key=lambda x: x[5],reverse=False) 
+medianArea = findMedian(5,cowSquares)
+# Print the cowSquares
 for sqr in cowSquares:
    print sqr
+print medianArea, len(cowSquares)
 cv2.imshow('original', imgO)
 cv2.waitKey(0)
 cv2.destroyAllWindows()

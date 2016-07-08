@@ -2,7 +2,7 @@ import cv2
 import time
 import numpy as np
 
-filename = 'C5.jpg'
+filename = 'C6.jpg'
 imgOriginal = cv2.imread(filename)
 imgOriginal = cv2.resize(imgOriginal, (720 ,480))
 
@@ -52,6 +52,24 @@ def boundingRectSort(allRect,criteria):
  
 	return (allRect, boundingBoxes)
 
+# This function is still on progress, hope to return well ordered body of cow
+# in a convenient way 
+def getBoddy(allRect,boundingBoxes,bodyLines,epsilon):
+
+	i = 0
+	# Testing Y coord 
+	while abs(boundingBoxes[i][1] - boundingBoxes[i+1][1]) < epsilon and i < len(boundingBoxes):
+		x = boundingBoxes[i][0]
+		y = boundingBoxes[i][1]
+		cv2.circle(imgOriginal,(x,y),3,(255,0,0),-1)
+		i += 1
+
+	# drawing last one
+	x = boundingBoxes[i][0]
+	y = boundingBoxes[i][1]
+	cv2.circle(imgOriginal,(x,y),3,(255,0,0),-1)
+
+
 ################################################
 ############### MAIN LOOP ######################
 ################################################
@@ -78,12 +96,12 @@ def loop():
 		x = boundingBoxes[cnt][0]
 		y = boundingBoxes[cnt][1]
 		im = cv2.drawContours(imgOriginal,allRect,cnt,(0,255,0),3)
-		im = cv2.circle(imgOriginal,(x,y), 3, (255,0,0), -1)
+		#im = cv2.circle(imgOriginal,(x,y), 3, (255,0,0), -1)
 		text = str(cnt)
 		cv2.putText(imgOriginal,text,(x,y), font, 1,(0,0,255),1,cv2.LINE_AA)
 
-
-
+	epsilon = 10
+	getBoddy(allRect,boundingBoxes,3,epsilon)
 	cv2.imshow('im',imgOriginal)
 	cv2.waitKey(0)
 

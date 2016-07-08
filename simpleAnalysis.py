@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 # ------ GLOBAL VARIABLES ---------
-fileName = 'image.jpg'  # In case we are analyzing a single image, the name is stored here
+fileName = 'image9.jpg'  # In case we are analyzing a single image, the name is stored here
 bestThres = 0  # Stores the best threshold value for binarization on the image
 bestLen = 0    # Stores the maximum amount of squares found in the image
 actThresValue = 0    # Stores the threshold value which has the greatest amount of squares
@@ -16,10 +16,11 @@ def loadingImage(picName): # Loads the image or video frame and changes it to gr
 
 def clearImage(img, thresVal):
    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-   _, thres = cv2.threshold(imgGray, thresVal, 255, cv2.THRESH_BINARY_INV)
-   smooth = cv2.GaussianBlur(thres, (3, 3), 0)
+   smooth = cv2.GaussianBlur(imgGray, (3, 3), 0)
+   _, thres = cv2.threshold(smooth, thresVal, 255, cv2.THRESH_BINARY_INV)
+   #cv2.imshow('thres',thres)
    kernel = np.ones((3,3), np.uint8) # The declaration of this kernel is for the morphological transformation
-   morpho = cv2.erode(smooth, kernel, iterations = 2)
+   morpho = cv2.erode(thres, kernel, iterations = 2)
    return morpho
    
 def clearAdaptativeImage(img):
@@ -41,8 +42,7 @@ def printContourCoords(cx,cy,x,y):
 def findCowSquares(limExtent,contours = []):
    cowSquares = []   # This list is to store only the squares that belog to the cow
    cowContours = [] # This list is to to store the contours that belong to the cow
-   for i in range(0, len(contours)):
-      cnt = contours[i]
+   for cnt in contours:
       area = cv2.contourArea(cnt)
       x,y,w,h = cv2.boundingRect(cnt)
       rect_area = w*h
@@ -74,14 +74,53 @@ def findContours(img):
       cv2.CHAIN_APPROX_SIMPLE)
    return contours
 
-   #def detectHarCorners():
-      
+def sortList(l =[], index): # This functions sorts a multivaraible list depending on the index specified
+   l = sorted(l, key=lambda x: x[index],reverse=False) 
+   return l
+
+def findMedian(l=[],index):
+   if len(l) % 2 == 0:     # The length of the list is even
+      return l[len(l)/2][index]
+   else              # The lenght of the list is odd
+      return (l[len(l)/2][index] + l[len(l)/2 + 1][index])
 # ---------------------------------
 
 # -----NOW, MAKE THE MAGIC HAPPEN-----
 
 # Load the image...
 imgO = loadingImage(fileName)
+# Clean the image ...
+imgC = clearImage(imgO, 50)
+# Find contours ...
+contours = findContours(imgC)
+# Now, analyze the contours that we've found
+cowSquares = []
+for cnt in contours:
+   area = cv2.contourArea(cnt)
+   rect = cv2.minAreaRect(cnt)
+   x = rect[0][0]
+   y = rect[0][1]
+   w = rect[1][0]
+   h = rect[1][1]
+   box = cv2.boxPoints(rect)
+   box = np.int0(box)
+   x = np.int0(x)
+   y = np.int0(y)
+   rect_area = w*h
+   if(rect_area>0):
+      extent = float(area/rect_area)
+      xT,yT,wT,hT = cv2.boundingRect(cnt)
+      aspect_ratio = float(wT)/hT
+      if (extent >= 0.7 and aspect_ratio >= 0.75):   # tolerance
+         cowSquares.insert(0,[x,y,w,h,extent,area,aspect_ratio])
+         im = cv2.drawContours(imgO,[box],0,(255,0,0),1)
+         #cv2.circle(imgO, (x,y), 3, (0,0,255), -1)
+cowSquares = sorted(cowSquares, key=lambda x: x[1],reverse=False) 
+for sqr in cowSquares:
+   print sqr
+cv2.imshow('original', imgO)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
 """
 Suponiendo que tenemos la coordenada de la esquina superior izquierda de cada cuadro de la vaca

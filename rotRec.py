@@ -19,10 +19,10 @@ def getGoodSquares(contours):
 		w = int(rect[1][0])
 		h = int(rect[1][1])
 		#angle = rect [2] 
-		box = cv2.boxPoints(rect)
-		box = np.int0(box)
+		#box = cv2.boxPoints(rect)
+		#box = np.int0(box)
 		rect_area = w*h
-		if(rect_area>0):
+		if(rect_area>0): # sometimes this value is found
 			extent = float(area/rect_area)
 			if (extent >= 0.7):   # tolerance
 				allR.insert(0,cnt)
@@ -39,7 +39,7 @@ def getGoodSquares(contours):
 	
 # This method will sort countours respect to Y or X coord of bounding Rectangle
 # Critieria defines whether X o Y is used DEFAULT IS Y
-# This is always from lef to right of from top to bottom --> Reverse
+# This is always from lef to right of from top to bottom --> Reverse = False
 # Most of this is from here :	http://www.pyimagesearch.com/2015/04/20/sorting-contours-using-python-and-opencv/
 def boundingRectSort(allRect,criteria):
 
@@ -69,9 +69,8 @@ def loop():
 
 	allRect = getGoodSquares(contours)
 	boundingBoxes = [] # will be used in parallel with allRect
-
-	""" At this point we have all posible squares filtered and stored  AS COUNTOURS in allRect """
 	allRect, boundingBoxes = boundingRectSort(allRect,'y')
+	""" At this point we have all posible squares filtered and stored  AS COUNTOURS in allRect """
 
 	font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -82,8 +81,6 @@ def loop():
 		im = cv2.circle(imgOriginal,(x,y), 3, (255,0,0), -1)
 		text = str(cnt)
 		cv2.putText(imgOriginal,text,(x,y), font, 1,(0,0,255),1,cv2.LINE_AA)
-
-
 
 
 

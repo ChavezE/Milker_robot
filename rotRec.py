@@ -27,10 +27,6 @@ def getGoodSquares(contours):
 			if (extent >= 0.7):   # tolerance
 				allR.insert(0,cnt)
 
-	# ADD HERE MEDIAN SIZE FILTERING
-	# ADD HERE MEDIAN SIZE FILTERING
-	# ADD HERE MEDIAN SIZE FILTERING
-
 	# ADD ANY OTHER FILTER
 	# ADD ANY OTHER FILTER
 	# ADD ANY OTHER FILTER

@@ -88,15 +88,22 @@ def getGoodSquares(contours):
                                                 
 	return allR
 
-# This function recieves 2 parameters: a list and a elemnt that is inside the list
-# STILL NOT WORKING
-def findIndex(item, l=[]):
-	for i in range(0, len(l)):
-		k = l[i]
-		xK,yK,wK,hK = cv2.boundingRect(k)
-		xI,yI,wI,hI = cv2.boundingRect(item)
-		if xK == xI and yK == yI and wK ==wI and hK == hI:
-			return i 
+# This function is still on progress, hope to return well ordered body of cow
+# in a convenient way 
+def getBoddy(allRect,boundingBoxes,bodyLines,epsilon):
+
+	i = 0
+	# Testing Y coord 
+	while abs(boundingBoxes[i][1] - boundingBoxes[i+1][1]) < epsilon and i < len(boundingBoxes):
+		x = boundingBoxes[i][0]
+		y = boundingBoxes[i][1]
+		cv2.circle(imgOriginal,(x,y),3,(255,0,0),-1)
+		i += 1
+
+	# drawing last one
+	x = boundingBoxes[i][0]
+	y = boundingBoxes[i][1]
+	cv2.circle(imgOriginal,(x,y),3,(255,0,0),-1)
 
 # This method will sort countours respect to Y or X coord of bounding Rectangle
 # Critieria defines whether X o Y is used DEFAULT IS y

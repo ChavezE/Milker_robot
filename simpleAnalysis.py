@@ -15,6 +15,7 @@ def loadingImage(picName): # Loads the image or video frame and changes it to gr
    return img
 
 def clearImage(img, thresVal):
+   img = cv2.resize(img, (720 ,480))
    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
    smooth = cv2.GaussianBlur(imgGray, (3, 3), 0)
    _, thres = cv2.threshold(smooth, thresVal, 255, cv2.THRESH_BINARY_INV)
@@ -83,6 +84,55 @@ def findMedian(index,l=[]):
       return l[len(l)/2][index]
    else:              # The lenght of the list is odd
       return (l[len(l)/2][index] + l[len(l)/2 + 1][index])/2
+
+# This method will recibe all countours in image and
+# will make all necesary filtering in order to achive
+# countors with high probability of being cow rectangles
+def getGoodSquares(contours):
+   allR = [] # temporal for storing 
+   for cnt in contours:
+      area = cv2.contourArea(cnt)
+      rect = cv2.minAreaRect(cnt)
+      #x = int(rect[0][0])
+      #y = int(rect[0][1])
+      w = int(rect[1][0])
+      h = int(rect[1][1])
+      #angle = rect [2] 
+      #box = cv2.boxPoints(rect)
+      #box = np.int0(box)
+      rect_area = w*h
+      if(rect_area>0): # sometimes this value is found
+         extent = float(area/rect_area)
+         if (extent >= 0.7):   # tolerance
+            allR.insert(0,cnt)
+
+   # Filter squares for its position on the image
+   for i in range(0,len(allR)):
+      cnt = allR[i]
+      x,y,w,h = cv2.boundingRect(cnt)
+      delCont = True
+      for cntT in allR:
+         xT,yT,wT,hT = cv2.boundingRect(cntT)
+         # This statement is to CHECK is the contours are different
+         if not(x==xT and y==yT and w==wT and h==hT):
+            # Check if the contours has a neighbour 
+            if (abs(x - xT) < w or abs(y - yT) < h):
+               # Has at least a neighbour
+               delCont = False
+      # If no neihgbour is found, the contour is deleted from the list
+      if delCont:
+         allR.pop(i)
+
+
+   # ADD HERE MEDIAN SIZE FILTERING
+   # ADD HERE MEDIAN SIZE FILTERING
+   # ADD HERE MEDIAN SIZE FILTERING
+
+   # ADD ANY OTHER FILTER
+   # ADD ANY OTHER FILTER
+   # ADD ANY OTHER FILTER
+
+   return allR
 # ---------------------------------
 
 # -----NOW, MAKE THE MAGIC HAPPEN-----

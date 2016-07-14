@@ -89,7 +89,9 @@ def findMedian(index,l=[]):
 # will make all necesary filtering in order to achive
 # countors with high probability of being cow rectangles
 def getGoodSquares(contours):
-   allR = [] # temporal for storing 
+
+   allR = [] # temporal for storing
+   cowSqrs = [] 
    for cnt in contours:
       area = cv2.contourArea(cnt)
       rect = cv2.minAreaRect(cnt)
@@ -105,34 +107,97 @@ def getGoodSquares(contours):
          extent = float(area/rect_area)
          if (extent >= 0.7):   # tolerance
             allR.insert(0,cnt)
+            cowSqrs.insert(0,[area,extent])
+        cv2.drawContours(imgOriginal, allR, -1, (0,255,0))
+   # FILTER SQUARES FOR ITS AREA
+   (allR, cowSqrs) = zip(*sorted(zip(allR, cowSqrs),
+      key=lambda b:b[1][0], reverse=False))
+   
+   medianArea = 0
 
-   # Filter squares for its position on the image
-   for i in range(0,len(allR)):
-      cnt = allR[i]
+   # HERE WE CALCULATE THE MEDIAN VALUE OF AREA FOR ALL THE CONTOURS IN allR
+   if (len(cowSqrs) % 2) != 0:     # The length of the list is odd
+      medianArea = cowSqrs[len(cowSqrs)/2][0]
+   # The lenght of the list is even
+   else:
+      medianArea = (cowSqrs[len(cowSqrs)/2][0] + cowSqrs[len(cowSqrs)/2 + 1][0])/2
+
+        
+
+        tempAllR = []
+   for cnt in allR:
+      areaTemp = cv2.contourArea(cnt)
+      if not((areaTemp > medianArea * 3) or (areaTemp < medianArea * 0.25)):
+                       tempAllR.insert(0, cnt) 
+        allR = tempAllR
+        cv2.drawContours(imgOriginal, allR, -1, (255,0,0), 4)
+
+        
+
+
+   # FILTER squares for its POSITION on the image
+   # STILL NOT WORKING
+   '''
+   for cnt in allR:
       x,y,w,h = cv2.boundingRect(cnt)
-      delCont = True
+      # First we assume that 'cnt' has no neighbours neither in x nor in y axis
+      xNeig = False
+      yNeig = False
       for cntT in allR:
          xT,yT,wT,hT = cv2.boundingRect(cntT)
-         # This statement is to CHECK is the contours are different
-         if not(x==xT and y==yT and w==wT and h==hT):
+         # Before serching for neighbours, we need to be sure we are analyzing 2 different contours
+         if(x != xT and y != yT and w != wT and h != hT): 
             # Check if the contours has a neighbour 
-            if (abs(x - xT) < w or abs(y - yT) < h):
-               # Has at least a neighbour
-               delCont = False
+            if (abs(y - yT) < h):
+            # Has neighbour in y axis
+               yNeig = True
+            if (abs(x - xT) < w):
+            # Has neighbour in x axis
+               xNeig = True
+
       # If no neihgbour is found, the contour is deleted from the list
-      if delCont:
+      if not yNeig or not xNeig:
+         i = findIndex(cnt, allR)
          allR.pop(i)
+   '''
+   
 
-
-   # ADD HERE MEDIAN SIZE FILTERING
-   # ADD HERE MEDIAN SIZE FILTERING
-   # ADD HERE MEDIAN SIZE FILTERING
-
-   # ADD ANY OTHER FILTER
-   # ADD ANY OTHER FILTER
-   # ADD ANY OTHER FILTER
-
+                                                
    return allR
+################################################
+############### MAIN LOOP ######################
+################################################
+def loop():
+
+   imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
+   imGray = cv2.GaussianBlur(imGray, (3,3), 2)
+   _, thres1 = cv2.threshold(imGray,binValue,255,cv2.THRESH_BINARY_INV)
+   thres1 = cv2.erode(thres1,np.ones((5,5),np.uint8), iterations=2)
+   cv2.imshow('t',thres1)
+   image, contours, hierarchy = cv2.findContours(thres1,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)
+   ##########################################################################################
+
+   allRect = getGoodSquares(contours)
+   boundingBoxes = [] # will be used in parallel with allRect
+   allRect, boundingBoxes = boundingRectSort(allRect,'y')
+   """ At this point we have all posible squares filtered and stored  AS COUNTOURS in allRect """
+
+   font = cv2.FONT_HERSHEY_SIMPLEX # This line defines the font 
+
+   cv2.drawContours(imgOriginal,allRect,-1,(0,255,0),1)
+   """
+   for cnt in range(0,len(allRect)):
+      x = boundingBoxes[cnt][0]
+      y = boundingBoxes[cnt][1]
+      im = cv2.drawContours(imgOriginal,allRect,cnt,(0,255,0),3)
+      im = cv2.circle(imgOriginal,(x,y), 3, (255,0,0), -1)
+      text = str(cnt)
+      cv2.putText(imgOriginal,text,(x,y), font, 1,(0,0,255),1,cv2.LINE_AA)
+   """   
+   cv2.imshow('im',imgOriginal)
+   cv2.waitKey(0)
+
+
 # ---------------------------------
 
 # -----NOW, MAKE THE MAGIC HAPPEN-----
@@ -143,185 +208,7 @@ imgO = loadingImage(fileName)
 imgC = clearImage(imgO, 65)
 # Find contours ...
 contours = findContours(imgC)
-# Now, analyze the contours that we've found
-cowSquares = []
-for cnt in contours:
-   area = cv2.contourArea(cnt)
-   rect = cv2.minAreaRect(cnt)
-   x = rect[0][0]
-   y = rect[0][1]
-   w = rect[1][0]
-   h = rect[1][1]
-   box = cv2.boxPoints(rect)
-   box = np.int0(box)
-   rect_area = w*h
-   if(rect_area>0):
-      extent = float(area/rect_area)
-      xT,yT,wT,hT = cv2.boundingRect(cnt)
-      aspect_ratio = float(wT)/hT
-      if (extent >= 0.7 ):   # tolerance and aspect_ratio >= 0.75
-         cowSquares.insert(0,[x,y,w,h,extent,area,aspect_ratio])
-         im = cv2.drawContours(imgO,[box],0,(0,0,255),1)
-         #cv2.circle(imgO, (x,y), 3, (0,0,255), -1)
-cowSquares = sorted(cowSquares, key=lambda x: x[5],reverse=False) 
-medianArea = findMedian(5,cowSquares)
-# Print the cowSquares
-for sqr in cowSquares:
-   print sqr
-print medianArea, len(cowSquares)
-cv2.imshow('original', imgO)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
 
-"""
-Suponiendo que tenemos la coordenada de la esquina superior izquierda de cada cuadro de la vaca
-lo que tenemos que hacer es algo como esto:
-
-x0 y y0 son las coordenadas de la esq superior izquierda del cuadro para el que vamos a buscar
-
-en un ciclo de todos los contours vas buscando las coordenadas de la esq superior izq de cada uno de los cuadros
-que vamos a llamarles xT y yT
-
-Tenemos un epsilon y decimos...
-
-if abs((x0 - 2*w) - xT) < epsilon and abs(y0 - yT) < epsilon:
-   # (x0,y0) tiene un vecino a la IZQUIERDA en (xT,yT)
-if abs((x0 + 2*w) - xT) < epsilon and abs(y0 - yT) < epsilon:
-   # (x0,y0) tiene un vecino a la DERECHA en (xT,yT)
-
-Ya no lo escribi bien porque creo que las coordenadas que sacas cuando haces esto...
-x = rect[0][0]
-y = rect[0][1]
-son del centro del circulo y no de la esquina superior izquierda. Tambien podria jalar pero si puedes dale tu
-
-"""
-
-"""
-
-# Analyze for a single threshold value
-imgO = loadingImage(fileName)
-img = clearImage(imgO, 40)
-_, contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, 
-      cv2.CHAIN_APPROX_SIMPLE)
-cowSquares,cowContours = findCowSquares(0.7,contours)
-img = np.float32(img)
-dst = cv2.cornerHarris(imgm4,5,0.04)
-img[dst > 0.01*dst.max()] = [255,0,0]
-cv2.drawContours(imgO, cowContours, -1, (0,255,0), 1)
-cv2.imshow('o', imgO)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
-# Iterate over the image to see the serch for the best threshold value
-for k in range(0,80):
-   img = clearImage(imgO,k)
-   image, contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, 
-      cv2.CHAIN_APPROX_SIMPLE)
-   cowSquares, cowContours = findCowSquares(0.7,contours)
-   
-
-
-# 'average Extent' stores the average extent in pixels from an image's squares
-# 'averageArea' stores the average area in pixels from an image's squares
-   averageExtent, averageArea1, averageArea2 = calculateAverages(cowSquares) 
-   if (len(cowSquares) >= 22):
-      print ("%s Cow Sqrs: %s extent: %s area: %s, %s" % (k, len(cowSquares), averageExtent
-                                                      ,averageArea1, averageArea2))
-#Adaptative threshold analysis
-img = clearAdaptativeImage(imgO)
-_, contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, 
-      cv2.CHAIN_APPROX_SIMPLE)
-cv2.drawContours(imgO, contours, -1, (0,255,0), 1)
-
-# Emilio's
-
-
-def loop():
-   binValue = 65 # parameter for the threshold
-   ##########################################################################################
-   imGray = cv2.cvtColor(imgO, cv2.COLOR_BGR2GRAY)
-   imGray = cv2.GaussianBlur(imGray, (3,3), 2)
-   _, thres1 = cv2.threshold(imGray,binValue,255,cv2.THRESH_BINARY_INV)
-   thres1 = cv2.erode(thres1,np.ones((5,5),np.uint8))
-   cv2.imshow('t',thres1)
-   image, contours, hierarchy = cv2.findContours(thres1,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)
-   ##########################################################################################
-   for cnt in contours:
-      area = cv2.contourArea(cnt)
-      rect = cv2.minAreaRect(cnt)
-      x = rect[0][0]
-      y = rect[0][1]
-      w = rect[1][0]
-      h = rect[1][1]
-      angle = rect [2]
-      box = cv2.boxPoints(rect)
-      box = np.int0(box)
-      #print x,y,w,h,angle
-      rect_area = w*h
-      if(rect_area>0):
-         extent = float(area/rect_area)
-         if (extent >= 0.7):   # tolerance
-            im = cv2.drawContours(imgOriginal,[box],0,(0,0,255),3)
-         #else:
-         #  im = cv2.drawContours(imgOriginal,[box],0,(0,255,0),2)
-      for cnt in range (0,len(contours)):
-         area = cv2.contourArea(contours[cnt])
-         x,y,w,h = cv2.boundingRect(contours[cnt])
-         rect_area = w*h
-         if(rect_area>0):
-            extent = float(area/rect_area)
-            if (extent >= 0.7):   # tolerance
-               img = cv2.drawContours(imgOriginal, contours, cnt, (0,255,0), 2)
-            #else:
-            #  im = cv2.drawContours(imgOriginal,[box],0,(0,255,0),2)
-   cv2.imshow('im',imgOriginal)
-   cv2.waitKey(0)
 loop()
 cv2.destroyAllWindows()
 
-"""
-
-
-# Print some frames to check results ...
-#cv2.imshow('o', imgO)
-#cv2.imshow('t', img)
-
-
-# -----------------------------------
-
-
-"""
-while (actThresValue <= 150):
-   _, thres = cv2.threshold(frame_gray, actThresValue, 255, cv2.THRESH_BINARY_INV)
-   smooth = cv2.GaussianBlur(thres, (3,3), 0)
-   kernel = np.ones((3,3), np.uint8)
-   morpho = cv2.erode(smooth, kernel, iterations = 2)
-
-   # Finding contours (B,G,R)
-
-   image, contours, hierarchy = cv2.findContours(morpho, cv2.RETR_TREE, 
-   cv2.CHAIN_APPROX_SIMPLE)
-   cowSquares = []   # This list is to store only the squares that belog to the cow
-
-   for i in range(0,len(contours)):
-      cnt = contours[i]
-      area = cv2.contourArea(cnt)
-      x,y,w,h = cv2.boundingRect(cnt)
-      rect_area = w*h
-      extent = float(area)/rect_area
-      if(extent >= 0.7):
-   # To know the center of the object
-         M = cv2.moments(cnt)
-         cx = int(M['m10']/M['m00'])
-         cy = int(M['m01']/M['m00'])
-         #print "Center %d : %d, %d   LeftTopCorner: %d, %d" % (i,cx,cy,x,y)
-         cowSquares.insert(0,[x,y,w,h])
-         #frame = cv2.drawContours(frame, contours, i, (0,255,0),1)
-   actualLen = len(cowSquares)
-   if (bestLen <= actualLen):
-      bestThres = actThresValue
-      bestLen = actualLen
-   
-   actThresValue = actThresValue + 1
-
-"""

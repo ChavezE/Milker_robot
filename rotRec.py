@@ -2,7 +2,7 @@ import cv2
 import time
 import numpy as np
 
-filename = 'image2.jpg'
+filename = 'C8.jpg'
 binValue = 65 # parameter for the threshold
 
 
@@ -117,20 +117,32 @@ def getGoodSquares(contours):
 
 # This function is still on progress, hope to return well ordered body of cow
 # in a convenient way 
-def getBoddy(allRect,boundingBoxes,bodyLines,epsilon):
+def getBody(allRect,boundingBoxes,totLines,epsilon):
 
+	bodyLines = []
+	yTest = boundingBoxes[0][1]
 	i = 0
-	# Testing Y coord 
-	while abs(boundingBoxes[i][1] - boundingBoxes[i+1][1]) < epsilon and i < len(boundingBoxes):
-		x = boundingBoxes[i][0]
-		y = boundingBoxes[i][1]
-		cv2.circle(imgOriginal,(x,y),3,(255,0,0),-1)
-		i += 1
+	b = g = r = 0
 
-	# drawing last one
-	x = boundingBoxes[i][0]
-	y = boundingBoxes[i][1]
-	cv2.circle(imgOriginal,(x,y),3,(255,0,0),-1)
+	for count in range(0,totLines):
+		if count == 0:
+			b = 255
+		elif count == 1:
+			g = 255
+		elif count == 2:
+			r = 255
+		while(abs(boundingBoxes[i][1] - yTest) < epsilon):
+			x = boundingBoxes[i][0]
+			y = boundingBoxes[i][1]
+			cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
+			bodyLines.insert(0,allRect[i])
+			i += 1
+
+		print count
+		yTest = boundingBoxes[i][1]
+
+	return bodyLines
+
 
 # This method will sort countours respect to Y or X coord of bounding Rectangle
 # Critieria defines whether X o Y is used DEFAULT IS y
@@ -167,6 +179,7 @@ def loop():
 
 	font = cv2.FONT_HERSHEY_SIMPLEX # This line defines the font 
 	cv2.drawContours(imgOriginal,allRect,-1,(0,255,0),1)
+	_ = getBody(allRect,boundingBoxes,3,30)
 	"""
 	for cnt in range(0,len(allRect)):
 		x = boundingBoxes[cnt][0]

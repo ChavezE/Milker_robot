@@ -4,7 +4,7 @@ import math
 import numpy as np
 import LARC1 as rb
 
-filename = 'image22 .jpg'
+filename = 'image22.jpg'
 binValue = 65 # parameter for the threshold
 
 
@@ -15,7 +15,7 @@ binValue = 65 # parameter for the threshold
 def loadImage(capName):
 	
 	imgOriginal = cv2.imread(capName)
-	imgOriginal = cv2.resize(imgOriginal, (720 ,480))
+	#imgOriginal = cv2.resize(imgOriginal, (720 ,480))
 	return imgOriginal
 
 imgOriginal = loadImage(filename)
@@ -29,7 +29,6 @@ def loop():
 	filteredImage = rb.clearImage(imgOriginal)
 	thresImage = rb.doThresHold(filteredImage,binValue)
 	cv2.imshow('T',thresImage)
-
 	contours = rb.findContours(thresImage)
 	# Getting Contours here (and other thing we're not using)
 	# image, contours, hierarchy = cv2.findContours(thresImage,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)

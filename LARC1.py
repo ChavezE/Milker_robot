@@ -66,6 +66,13 @@ def findMedian(index,l):
    else:              # The lenght of the list is even
       return (l[len(l)/2][index] + l[len(l)/2 + 1][index])/2
 
+def printCowSquares(imgOriginal,G,B,R,sqrs):
+	for sqr in sqrs:
+    	w = sqr[2]
+    	h = sqr[3]
+    	x = sqr[4]
+		y = sqr[5]
+    	cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
 
 # This method will recibe all countours in image and
 # will make all necesary filtering in order to achive
@@ -73,9 +80,7 @@ def findMedian(index,l):
 def getGoodSquares(contours,imgOriginal):
 
    # ----VARIABLES----
-   #allR = [] # List that stores the contours. This will be returned
-   #tempAllR = []
-   cowSqrs = [] # This list is useful to sort the list allR
+   cowSqrs = [] # This list is the one that is going to being returned
    tempCowSqrs = []
    # -----------------
 
@@ -88,58 +93,23 @@ def getGoodSquares(contours,imgOriginal):
       #y = int(rect[0][1])
       w = int(rect[1][0])
       h = int(rect[1][1])
-      rect_area = w*h
-      if(rect_area>0): # sometimes this value is found
-         extent = float(area/rect_area)
+      rect_area = w * h
+      if(rect_area > 0): # sometimes this value is found
+         extent = float(area / rect_area)
          if (extent >= 0.7):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
-            # allR.insert(0,cnt)
             cowSqrs.append([area,extent,w,h,x,y])
 
-   #print "Len Conts: ", len(allR)
-   # Print contours BEFORE the filters in green color
-   #cv2.drawContours(imgOriginal, allR, -1, (0,255,0), 2) 
-   
-
-   # We will continue analysing the contours ONLY if we have at least 15
+   # We will continue analyzing the contours ONLY if we have at least 15
    if len(cowSqrs) < 15:
       print("Not enough squares")
       return allR
 
    # 2nd - FILTER Contours FOR ITS AREA
-   # This function sorts both lists "allR" and "cowSqrs" in ascending order of its areas
-   # (allR, cowSqrs) = zip(*sorted(zip(allR, cowSqrs), key=lambda b:b[1][0], reverse=False))
-   cowSqrs = sorted(cowSqrs, key=lambda x: x[0],reverse=False)
+   # In line 103 the squares are ordered in ascending order of its area
+   cowSqrs = sorted(cowSqrs, key=lambda x: x[0],reverse=False)  
 
-   # Print elements in cowSqrs
-   for sqr in cowSqrs:
-      w = sqr[2]
-      h = sqr[3]
-      x = sqr[4]
-      y = sqr[5]
-      #cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(255,0,0),2)
-   
-   """
-   # HERE WE CALCULATE THE MEDIAN VALUE OF AREA FOR ALL THE CONTOURS IN allR
-   medianArea = 0
-   # The length of the list is odd
-   if (len(cowSqrs) % 2) != 0:     
-      medianArea = cowSqrs[len(cowSqrs)/2][0]
-   # The lenght of the list is even
-   else:
-      medianArea = (cowSqrs[len(cowSqrs)/2][0] + cowSqrs[len(cowSqrs)/2 + 1][0])/2
-   print "Median Area: ", (medianArea)
-   
-   # THIS CYCLE remove the contours that are 3 times bigger or less than 0.25 of the median area
-   for cnt in allR:
-      areaTemp = cv2.contourArea(cnt)
-      if not((areaTemp > medianArea * 3) or (areaTemp < medianArea * 0.25)):
-         tempAllR.insert(0, cnt)    
-   cv2.drawContours(imgOriginal, tempAllR, -1, (255,255,0), 3)
-   """
-
-   # FILTER CONTOURS CREATING A AVERAGE THAT DISCARDS THE 5 BIGGEST CONTS 
-   # AND 5 SMALLEST
+   # FILTER SQUARES CREATING AN AVERAGE THAT DISCARDS THE 5 BIGGEST CONTS AND 5 SMALLEST
    # **** This Filter works better than the median filter ******
    avgArea = 0
    for i in range(5, len(cowSqrs) - 6):

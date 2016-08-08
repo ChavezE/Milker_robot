@@ -4,7 +4,8 @@ import math
 import numpy as np
 import LARC1 as rb
 
-filename = 'image23.jpg'
+
+filename = 'image10.jpg'
 binValue = 65 # parameter for the threshold
 
 
@@ -26,20 +27,35 @@ imgOriginal = loadImage(filename)
 # this function compares squares in X axis
 def getVerticalSqrs(cowSquares, epsilon):
 	linedSquares = []
+	tempSquares = []
 	for i in range(0,len(cowSquares) - 1):
 		xi = cowSquares[i][4]
 		yi = cowSquares[i][5]
+		areai = cowSquares[i][0]
+		temCount = 0
 		foundOthers = False
 		for j in range(i + 1,len(cowSquares) - 1):
 			xj = cowSquares[j][4]
 			yj = cowSquares[j][5]
+			areaj = cowSquares[j][0]
 			if abs(xj - xi) < epsilon:
-				# if already in list do not insert
-				if (linedSquares.count([xj,yj])) < 1:
-					linedSquares.append([xj,yj])
+				if(linedSquares.count((xj,yj,areaj)) < 1 ):
+					tempSquares.append((xj,yj,areaj))
+					temCount = temCount + 1
 					foundOthers = True
-		if foundOthers: # inserting the first one that found others
-			linedSquares.append([xi,yi])
+ 		if foundOthers:
+ 			temCount = temCount + 1
+		if temCount > 2:
+			tempSquares.append((xi,yi,areai))
+			stList = []
+			for x in range(0,len(tempSquares)):
+				stList.append(tempSquares[x][2])
+			stDeviation = np.std(stList)
+			print "Standar Deviation ", stDeviation
+			if(stDeviation < 150):
+				linedSquares.extend(tempSquares)
+		tempSquares = []
+
 
 	return linedSquares
 # This class would store rectangles
@@ -165,8 +181,8 @@ def loop():
 	# cv2.drawContours(imgOriginal,allRect,-1,(0,255,0),1)
 	# second parameter is number of cow lines
 	# third parameter is epsilon between same lines in pxls
-	myBody= rb.getBody(cowRectangles,imgOriginal,3,15)
-	linedSquares = getVerticalSqrs(cowRectangles,5 )
+	#myBody= rb.getBody(cowRectangles,imgOriginal,3,15)
+	linedSquares = getVerticalSqrs(cowRectangles,10 )
 
 
 	'''for i in range(0,3):
@@ -187,10 +203,11 @@ def loop():
 		text1 = "Angle : " + str(angle)
 		cv2.putText(imgOriginal,text1,(50,50), font, 0.5,(0,0,255),1  ,cv2.LINE_AA)
 	'''
-	for i in range(0,len(cowRectangles)):
-		print (cowRectangles[i])
+	#for i in range(0,len(cowRectangles)):
+	#	print (cowRectangles[i])
+
 	if len(linedSquares) != 0:
-	# showing squares
+		print linedSquares
 		for i in range(0,len(linedSquares)):
 			x = linedSquares[i][0]
 			y = linedSquares[i][1]
@@ -203,9 +220,9 @@ def loop():
 		yi = patas.leftLeg[0][1]
 		xd = patas.rightLeg[0][0]
 		yd = patas.rightLeg[0][1]
-		print patas.leftLeg
+		#print patas.leftLeg
 		cv2.circle(imgOriginal,(xi,yi),5,(0,255,0),-1)
-		cv2.circle(imgOriginal,(xd,yd),5,(0,255,0),-1)
+		cv2.circle(imgOriginal,(xd,yd),5,(255,0,0),-1)
 
 
 	cv2.imshow(filename,imgOriginal)

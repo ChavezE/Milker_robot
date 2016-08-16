@@ -5,7 +5,7 @@ import numpy as np
 import LARC1 as rb
 
 
-filename = 'image10.jpg'
+filename = 'image3.jpg'
 binValue = 65 # parameter for the threshold
 
 
@@ -28,13 +28,13 @@ imgOriginal = loadImage(filename)
 def getVerticalSqrs(cowSquares, epsilon):
 	linedSquares = []
 	tempSquares = []
-	for i in range(0,len(cowSquares) - 1):
+	for i in range(len(cowSquares)):
 		xi = cowSquares[i][4]
 		yi = cowSquares[i][5]
 		areai = cowSquares[i][0]
 		temCount = 0
 		foundOthers = False
-		for j in range(i + 1,len(cowSquares) - 1):
+		for j in range(i + 1,len(cowSquares)):
 			xj = cowSquares[j][4]
 			yj = cowSquares[j][5]
 			areaj = cowSquares[j][0]
@@ -48,7 +48,7 @@ def getVerticalSqrs(cowSquares, epsilon):
 		if temCount > 2:
 			tempSquares.append((xi,yi,areai))
 			stList = []
-			for x in range(0,len(tempSquares)):
+			for x in range(len(tempSquares)):
 				stList.append(tempSquares[x][2])
 			stDeviation = np.std(stList)
 			print "Standar Deviation ", stDeviation

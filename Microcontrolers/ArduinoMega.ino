@@ -539,10 +539,6 @@ void ultraLcdPrint()
 
 //<-----------------------Main Core------------------------>
 
-void basicOperation()
-{
-
-}
 
 //<----------------------------Set Up------------------------>
 void setup()
@@ -583,7 +579,39 @@ void setup()
 //<-----------------------------Loop------------------------>
 void loop()
 {
-
+  if (!exchangeZoneIsAvailable)
+    locateExchangeZone();
+  locateTerrine();
+  pickTerrine();
+  if (!cowIsAvailable)
+    locateClosestCow();
+  goNerbyCow();
+  turnOnVision();
+  while (!cowIsInFront || !cowIsCentered)
+  {
+    if (!cowIsInFront)
+      moveToSide();
+    if (!cowIsCentered)
+      moveCowCenter();
+  }
+  turnOffVision();
+  getUnderCow();
+  milkCow();
+  getOutofCow();
+  if (!exitIsAvailable)
+    locateExit();
+  goToExit();
+  if (!containerIsAvailable)
+    locateContainer();
+  goToContainer();
+  positionBesideContainer();
+  pourMilk();
+  if (!emptyTerrineZoneIsAvailable)
+    locateEmptyTerrineZone();
+  goToEmptyTerrineZone();
+  locateFreeSpace();
+  dropTerrine();
+  goToExit();
 }
 
 void handleEncoder()

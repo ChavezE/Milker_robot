@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 import math
+import LARC1 as rb
 
 # ------ GLOBAL VARIABLES ---------
 filename = 'image3.jpg'
@@ -249,7 +250,7 @@ def boundingRectSort(allRect,criteria):
 
 
 # MAIN LOOP FUNCTION
-def loop():
+def main():
 
    filteredImage = clearImage(imgOriginal)
    thresImage = doThresHold(filteredImage,binValue)
@@ -283,6 +284,6 @@ def loop():
 
 # -----NOW, MAKE THE MAGIC HAPPEN-----
 
-loop()
+main()
 cv2.destroyAllWindows()
 

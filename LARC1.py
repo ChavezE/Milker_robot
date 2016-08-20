@@ -177,7 +177,7 @@ def getGoodSquares(contours,imgOriginal):
          tempCowSqrs.append(actSqr)
          neighbours.append(s)
    cowSqrs = tempCowSqrs
-
+   """
    font = cv2.FONT_HERSHEY_SIMPLEX # This line defines the font
    for sqr in cowSqrs:
       actIndex = cowSqrs.index(sqr)
@@ -186,7 +186,7 @@ def getGoodSquares(contours,imgOriginal):
       text = str(neighbours[actIndex])
       cv2.putText(imgOriginal,text,(x,y), font, 0.4,(0,0,255),1,cv2.LINE_AA)
 
-   """
+   
    # Print elements in cowSqrs
    for sqr in cowSqrs:
       w = sqr[2]

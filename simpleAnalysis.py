@@ -73,7 +73,7 @@ def main():
 
    filteredImage = rb.clearImage(imgOriginal)
    thresImage = rb.doThresHold(filteredImage,binValue)
-   #cv2.imshow('T',thresImage)
+   cv2.imshow('T',thresImage)
 
    # Getting contours here (and other thing we're not using)
    contours = rb.findContours(thresImage)
@@ -81,7 +81,10 @@ def main():
    allRect = rb.getGoodSquares(contours,imgOriginal)
    # Next function is to find all the Legs
    allLegs = getMyLegs(allRect,20,3)
+   for leg in allLegs
+      print leg
    # Print allLegs with different colors
+   """
    for i in range(len(allLegs)):
       B = randint(0,255)
       G = randint(0,255)
@@ -90,12 +93,11 @@ def main():
          xA = sqr[0]
          yA = sqr[1]
          cv2.circle(imgOriginal,(xA,yA),3,(B,G,R),-1)
+   """
 
-
+   """
    # This line defines the font
    font = cv2.FONT_HERSHEY_SIMPLEX  
-   #cv2.drawContours(imgOriginal,allRect,-1,(0,255,0))
-   """
    This piece of code is to print the list allRect
    for cnt in range(0,len(allRect)):
       x = boundingBoxes[cnt][0]

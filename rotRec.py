@@ -3,10 +3,11 @@ import time
 import math
 import numpy as np
 import LARC1 as rb
+import random
 
 
-filename = 'image3.jpg'
-binValue = 65 # parameter for the threshold
+filename = 'image32.jpg'
+binValue = 75 # parameter for the threshold
 
 
 # loads image as imgOriginal
@@ -23,9 +24,18 @@ imgOriginal = loadImage(filename)
 ''' 	IN THIS AREA WE TEST POSIBLE FUNCTIONS OR CLASSES TO BE INSERTED 
 		IN LARC1 PERMANENTLY
 '''
+
+def existsInVertical(lined,key):
+	for i in range (len(lined)):
+		for j in range(len(lined[i])):
+			if lined[i][j] == key:
+				return True
+	return False
 # cowSquares is an emibas list, epsilon is tolerance 
-# this function compares squares in X axis
-def getVerticalSqrs(cowSquares, epsilon):
+# this function compares squares in X axis to find vertical aligned
+# squared and stores them sublists that belong to linedSquares
+# NOTE:  linedSquares has 3 dimensions 
+def getVerticalSqrs(cowSquares, xTol, minSqrs):
 	linedSquares = []
 	tempSquares = []
 	for i in range(len(cowSquares)):
@@ -34,125 +44,161 @@ def getVerticalSqrs(cowSquares, epsilon):
 		areai = cowSquares[i][0]
 		temCount = 0
 		foundOthers = False
-		for j in range(i + 1,len(cowSquares)):
-			xj = cowSquares[j][4]
-			yj = cowSquares[j][5]
-			areaj = cowSquares[j][0]
-			if abs(xj - xi) < epsilon:
-				if(linedSquares.count((xj,yj,areaj)) < 1 ):
+		if not(existsInVertical(linedSquares,(xi,yi,areai))):
+			for j in range(i + 1,len(cowSquares)):
+				xj = cowSquares[j][4]
+				yj = cowSquares[j][5]
+				areaj = cowSquares[j][0]
+				if abs(xj - xi) < xTol:
 					tempSquares.append((xj,yj,areaj))
 					temCount = temCount + 1
 					foundOthers = True
  		if foundOthers:
  			temCount = temCount + 1
-		if temCount > 2:
+		if temCount > minSqrs:
 			tempSquares.append((xi,yi,areai))
 			stList = []
 			for x in range(len(tempSquares)):
 				stList.append(tempSquares[x][2])
 			stDeviation = np.std(stList)
 			print "Standar Deviation ", stDeviation
-			if(stDeviation < 150):
-				linedSquares.extend(tempSquares)
+			if(stDeviation < 500):
+				linedSquares.append(tempSquares)
 		tempSquares = []
 
+	linedSquares = sorted(linedSquares, key=lambda x: x[0],reverse=False)
+
+	for x in range (len(linedSquares)):
+		linedSquares[x] =  sorted(linedSquares[x], key=lambda x: x[1],reverse=False)
 
 	return linedSquares
-# This class would store rectangles
-# and sort them to be used as vertical
-# indicators
-class Mylegs:
-	""" squares here """
 
+def getHorizontalSqrs(cowRectangles, myLegs):
+	# trying to find a pair square for the top lef leg
+	epsilon = 20
+	cowRows = []
+	temCowRows = []
+	for i in range (len(cowRectangles)):
+		x0 = cowRectangles[i][4]
+		y0 = cowRectangles[i][5]
+		temCowRows = []
+		temCowRows.append((x0,y0))
+		if (betweenLegs(myLegs,x0) and not (existsInVertical(cowRows,(x0,y0)))):
+			for j in range (i + 1, len(cowRectangles)):
+				xt = cowRectangles[j][4]
+				yt = cowRectangles[j][5]
+				if ( betweenLegs(myLegs,xt) and abs(yt - y0) <= epsilon):
+					temCowRows.append((xt,yt))
+					x0 = xt
+					y0 = yt
+		b = int ( random.uniform(50,255))
+		g = int ( random.uniform(50,255))
+		r = int ( random.uniform(50,255))
+		if( len(temCowRows) >= 4):
+			cowRows.append(temCowRows)
+			for rT in temCowRows:
+				x = rT[0]
+				y = rT[1]
+				cv2.circle(imgOriginal,(x,y),4,(b,g,r),-1)
 
-	def __init__(self, listaCuadros):
+# this function compares a leg
+# and returns T if exists else F
+def existInAllLegs(allLegs,key):
+	for i in range (len(allLegs)):
+			if allLegs[i] == key:
+				return True
+	return False
 
-		# variables
-		self.leftLeg = [] # here we store coordenates of left leg
-		self.rightLeg = [] # coord for right leg
-		self.epsilon = 20 # This is the range of error when finding the legs
-		#
+def getMyLegs(cowSquares, xTol, minSqrs):
+	allLegs = []
+	tempSquares = []
+	xTol = 2
+	for i in range(len(cowSquares)):
+		# x,y coord of individual sqr
+		xi = cowSquares[i][4]
+		yi = cowSquares[i][5]
+		areai = cowSquares[i][0]
+		found = False
+		# comparing with rest of Sqrs
+		for j in range(len(cowSquares)):
+			if(i != j):
+				xj = cowSquares[j][4]
+				yj = cowSquares[j][5]
+				areaj = cowSquares[j][0]
+				if abs(xj - xi) < xTol:
+					tempSquares.append([xj,yj,areaj])
+					found = True		
+	 			# adding first sqr
+	 			if found:
+	 				tempSquares.append([xi,yi,areai])
 
-		# ---Filling up leftLeg---
+		print tempSquares
+		# sorting tempSquares to compare in allSquares
+		tempSquares = sorted(tempSquares, key=lambda x: x[0],reverse=False)
+		# minimum sqrs and repetition comparation	
+		print len(tempSquares)
+		if len(tempSquares) >= minSqrs and not existInAllLegs(allLegs,tempSquares):
+			# size RECTIFICATOR comparation
+			stList = []
+			for x in range(len(tempSquares)):
+				stList.append(tempSquares[x][2])
+			stDeviation = np.std(stList)
+			# ADJUST THIS IF EXPERIMENTALLY TO WORK EFFICIENT
+			if(stDeviation < 500):
+				allLegs.append(tempSquares)
+			
+		# clean temporal vairables
+		tempSquares = []
 
-		# listaCuadros is sorted with the upperLeftCorner in the index '0'
-		listaCuadros = self.upperLeftCorner(listaCuadros)
-		mostLeft = listaCuadros[0]
-		# insert the mostLeft coordinate as the first element of the left leg
-		self.leftLeg.insert(0,mostLeft)
-		# insert all of the other coords that build up the left leg
-		self.findLeftLeg(listaCuadros)
-		# At last, the leftLeg coords are sorted from top to bottom
-		self.leftLeg = sorted(self.leftLeg, key=lambda x: x[1],reverse=False)
+	for x in range (len(allLegs)):
+		allLegs[x] =  sorted(allLegs[x], key=lambda x: x[1],reverse=False)
 
-		# ---Filling up leftLeg---
+	return allLegs
 
-		# is pretty much the same process as filling up leftLeg
-		listaCuadros = self.upperRightCorner(listaCuadros)
-		mostRight = listaCuadros[0]
-		self.rightLeg.insert(0, mostRight)
-		self.findRightLeg(listaCuadros)
-		self.rightLeg = sorted(self.rightLeg, key=lambda x: x[1],reverse=False)
-		self.contRightLeg = len(self.rightLeg)
+def printLegs(linedSqrs):
 
+	for i in range (0, len(linedSqrs)):
+		print linedSqrs[i]
+		b = int ( random.uniform(50,255))
+		g = int ( random.uniform(50,255))
+		r = int ( random.uniform(50,255))
+		for j in range(0,len(linedSqrs[i])):
+			x = int(linedSqrs[i][j][0])
+			y = int(linedSqrs[i][j][1])
+			cv2.circle(imgOriginal,(x,y),10,(b,g,r),-1)
 
-	def findLeftLeg(self, listaCuadros):
-		# Looking for the coordinates that have the same 'x' coordinate
-		for i in range(1, len(listaCuadros)):
-			if(abs(listaCuadros[i][0] - self.leftLeg[0][0]) < self.epsilon):
-				self.leftLeg.insert(len(self.leftLeg),listaCuadros[i])
-			else:
-				break
+# returns True is X coord is between legs of cow
+def betweenLegs(myLegs,xt):
+	if ( xt >= myLegs[0][0][0] and xt <= myLegs[len(myLegs) - 1][0][0] ):
+		return True
+	else:
+		return False
 
-	def upperLeftCorner(self,list1):
+def legsCenter(myLegs):
+	# X and Y of massCenter
+	xCenter = 0
+	yCenter = 0
+	xTemp = 0
+	yTemp = 0
+	count = 0
 
-		# The function "sorted" sorts a multidimensional list. Depending on x[0]
-		# is the index that you use to compare
-		list1 = sorted(list1, key=lambda x: x[0], reverse=False)
-		# Now that we have the list ordered from left to right we need to find the
-		# coordinate that is closest to the origin (0,0)
-		for i in range(0, len(list1)):
-			if abs(list1[0][0] - list1[i][0]) <= self.epsilon:
-				if list1[0][1] > list1[i][1]:
-					temp = list1[0]
-					list1[0]=list1[i]
-					list1[i]=temp
-				else:
-					break
-		return list1
+	# Getting averages
+	for i in range (len(myLegs)):
+		for j in range(len(myLegs[i])):
+			xTemp = xTemp + myLegs[i][j][0]
+			yTemp = yTemp +  myLegs[i][j][1]
 
-	def findRightLeg(self, listaCuadros):
-		# Define 'epsilon' which is the tolerance in px to find the other
-		# coordinates that form the right Leg
-		epsilon = 10
-		# Looking for the coordinates that have the same 'x' coordinate
-		for i in range(1, len(listaCuadros)):
-			if(abs(listaCuadros[i][0] - self.rightLeg[0][0]) < self.epsilon):
-				self.rightLeg.insert(len(self.rightLeg),listaCuadros[i])
-			else:
-				break
+		xTemp = xTemp / len(myLegs[i])
+		yTemp = yTemp / len(myLegs[i])
+		xCenter = xCenter + xTemp
+		yCenter = yCenter + yTemp
+		xTemp = 0
+		yTemp = 0
 
-	def upperRightCorner(self,list1):
-		# 'epsilon' is the error range in pixels
-		epsilon = 10
-		# The function "sorted" sorts a multidimensional list. Depending on x[0]
-		# is the index that you use to compare
-		list1 = sorted(list1, key=lambda x: x[0], reverse=True)
-		# Now that we have the list ordered from right to left we need to find the
-		# coordinate that is the top of the right leg
-		for i in range(0, len(list1)):
-			if abs(list1[0][0] - list1[i][0]) <= self.epsilon:
-				if list1[0][1] > list1[i][1]:
-					temp = list1[0]
-					list1[0]=list1[i]
-					list1[i]=temp
-				else:
-					break
-		return list1
-	
+	xCenter = xCenter / len(myLegs)
+	yCenter = yCenter / len(myLegs)
 
-
-
+	return (xCenter,yCenter)
 
 ''' FINISHES HERE '''
 ################################################
@@ -166,60 +212,29 @@ def loop():
 	cv2.imshow('T',thresImage)
 	contours = rb.findContours(thresImage)
 	cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
-	# Getting Contours here (and other thing we're not using)
-	# image, contours, hierarchy = cv2.findContours(thresImage,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)
 
 	cowRectangles = rb.getGoodSquares(contours,imgOriginal)
 	# We have this order 
 	# [area,extent,w,h,x,y]
 	cowRectangles = rb.sortList(5,cowRectangles)
 	
-	font = cv2.FONT_HERSHEY_SIMPLEX # This line defines the font 
-	# cv2.drawContours(imgOriginal,allRect,-1,(0,255,0),1)
-	# second parameter is number of cow lines
-	# third parameter is epsilon between same lines in pxls
-	#myBody= rb.getBody(cowRectangles,imgOriginal,3,15)
-	linedSquares = getVerticalSqrs(cowRectangles,10)
+
+	# getHorizontalSqrs(cowRectangles, myLegs)
+
+	myLegs = getMyLegs(cowRectangles,15 ,10) # epsilon and >minSqrs
+	cowRectangles = rb.sortList(4,cowRectangles)
+	printLegs(myLegs)
+	print "numero de patas :", len(myLegs)
 
 
-	'''for i in range(0,3):
-		print myBody[i]
+	# x, y  = legsCenter(myLegs)
+	# cv2. circle(imgOriginal, (x,y),5,(0,255,0),-1)
+	
+	x = 720 / 2 
+	y = 480 / 2
+	cv2. circle(imgOriginal, (x,y),5,(0,0,255),-1)
 
-	tam = len(myBody[0])
-	Yangle1 = float(myBody[0][0][1])
-	Yangle2 = float(myBody[0][tam - 1][1])
-	Xangle1 = float(myBody[0][0][0])
-	Xangle2 = float(myBody[0][tam - 1][0])
-	if(Xangle2 - Xangle1) != 0:
 
-		param = float((Yangle2 - Yangle1) / (Xangle2 - Xangle1))
-		print param
-		print "%d %d %d %d"% (Yangle2, Yangle1, Xangle2 , Xangle1)
-		angle = math.degrees(math.atan(param))
-		print angle
-		text1 = "Angle : " + str(angle)
-		cv2.putText(imgOriginal,text1,(50,50), font, 0.5,(0,0,255),1  ,cv2.LINE_AA)
-	'''
-	#for i in range(0,len(cowRectangles)):
-	#	print (cowRectangles[i])
-
-	if len(linedSquares) != 0:
-		print linedSquares
-		for i in range(0,len(linedSquares)):
-			x = linedSquares[i][0]
-			y = linedSquares[i][1]
-			print (x,y)
-			cv2.circle(imgOriginal,(x,y), 5 , (0,0,255),-1)
-
-		patas = Mylegs(linedSquares)
-		pAux = patas.contLeftLeg
-		xi = patas.leftLeg[0][0]
-		yi = patas.leftLeg[0][1]
-		xd = patas.rightLeg[0][0]
-		yd = patas.rightLeg[0][1]
-		#print patas.leftLeg
-		cv2.circle(imgOriginal,(xi,yi),5,(0,255,0),-1)
-		cv2.circle(imgOriginal,(xd,yd),5,(255,0,0),-1)
 
 
 	cv2.imshow(filename,imgOriginal)

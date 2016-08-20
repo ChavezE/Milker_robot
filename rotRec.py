@@ -69,9 +69,7 @@ class Mylegs:
 
 		# variables
 		self.leftLeg = [] # here we store coordenates of left leg
-		self.contLeftLeg = 0 # This will tell us the size of the list 'leftLeg'
 		self.rightLeg = [] # coord for right leg
-		self.contRightLeg = 0 # This will tell us the size of the list 'rightLeg'
 		self.epsilon = 20 # This is the range of error when finding the legs
 		#
 
@@ -86,7 +84,6 @@ class Mylegs:
 		self.findLeftLeg(listaCuadros)
 		# At last, the leftLeg coords are sorted from top to bottom
 		self.leftLeg = sorted(self.leftLeg, key=lambda x: x[1],reverse=False)
-		self.contLeftLeg = len(self.leftLeg)
 
 		# ---Filling up leftLeg---
 
@@ -182,7 +179,7 @@ def loop():
 	# second parameter is number of cow lines
 	# third parameter is epsilon between same lines in pxls
 	#myBody= rb.getBody(cowRectangles,imgOriginal,3,15)
-	linedSquares = getVerticalSqrs(cowRectangles,10 )
+	linedSquares = getVerticalSqrs(cowRectangles,10)
 
 
 	'''for i in range(0,3):

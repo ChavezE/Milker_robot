@@ -65,15 +65,15 @@ def findMedian(index,l):
       return l[len(l)/2][index]
    else:              # The lenght of the list is even
       return (l[len(l)/2][index] + l[len(l)/2 + 1][index])/2
-
+"""
 def printCowSquares(imgOriginal,G,B,R,sqrs):
 	for sqr in sqrs:
-    	w = sqr[2]
-    	h = sqr[3]
-    	x = sqr[4]
-		y = sqr[5]
-    	cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
-
+      w = sqr[2]
+      h = sqr[3]
+      x = sqr[4]
+      y = sqr[5]
+      cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
+"""
 # This method will recibe all countours in image and
 # will make all necesary filtering in order to achive
 # countors with high probability of being cow rectangles
@@ -186,6 +186,7 @@ def getGoodSquares(contours,imgOriginal):
       text = str(neighbours[actIndex])
       cv2.putText(imgOriginal,text,(x,y), font, 0.4,(0,0,255),1,cv2.LINE_AA)
 
+   """
    # Print elements in cowSqrs
    for sqr in cowSqrs:
       w = sqr[2]
@@ -193,7 +194,7 @@ def getGoodSquares(contours,imgOriginal):
       x = sqr[4]
       y = sqr[5]
       cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(0,255,0),3)
-   
+   """
    # AT THE END, RETURN THE CONTOURS THAT BELONG TO THE COW                                     
    return cowSqrs
 
@@ -242,6 +243,14 @@ def boundingRectSort(allRect,criteria):
 		key=lambda b:b[1][i], reverse=False))
  
 	return (allRect, boundingBoxes)
+
+# this function compares a leg
+# and returns T if exists else F
+def existInAllLegs(allLegs,key):
+   for i in range (len(allLegs)):
+         if allLegs[i] == key:
+            return True
+   return False
 
 
 

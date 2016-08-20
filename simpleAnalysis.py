@@ -45,8 +45,6 @@ def getMyLegs(cowSquares, xTol, minSqrs):
 
       # sorting tempSquares to compare in allSquares
       tempSquares = sorted(tempSquares, key=lambda x: x[0],reverse=False)
-      # Print number of leg and the squares inside
-      print "Leg %d: " % (i), tempSquares
 
       if len(tempSquares) >= minSqrs and not rb.existInAllLegs(allLegs,tempSquares):
          # size RECTIFICATOR comparation
@@ -54,11 +52,10 @@ def getMyLegs(cowSquares, xTol, minSqrs):
          for x in range(len(tempSquares)):
             stList.append(tempSquares[x][2])
          stDeviation = np.std(stList)
-         print "Std Deviation: ", stDeviation
+         #print "Std Deviation: ", stDeviation
          # ADJUST THIS IF EXPERIMENTALLY TO WORK EFFICIENT
          if(stDeviation < 500):
             allLegs.append(tempSquares)
-            print "Leg %d: " % (len(allLegs)+1), tempSquares
          
 
    for x in range (len(allLegs)):
@@ -81,10 +78,10 @@ def main():
    allRect = rb.getGoodSquares(contours,imgOriginal)
    # Next function is to find all the Legs
    allLegs = getMyLegs(allRect,20,3)
-   for leg in allLegs
+   for leg in allLegs:
       print leg
    # Print allLegs with different colors
-   """
+   
    for i in range(len(allLegs)):
       B = randint(0,255)
       G = randint(0,255)
@@ -93,7 +90,7 @@ def main():
          xA = sqr[0]
          yA = sqr[1]
          cv2.circle(imgOriginal,(xA,yA),3,(B,G,R),-1)
-   """
+   
 
    """
    # This line defines the font

@@ -96,7 +96,7 @@ def getGoodSquares(contours,imgOriginal):
       rect_area = w * h
       if(rect_area > 0): # sometimes this value is found
          extent = float(area / rect_area)
-         if (extent >= 0.7):   # tolerance
+         if (extent >= 0.7 and area > 20):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
             cowSqrs.append([area,extent,w,h,x,y])
 
@@ -104,7 +104,7 @@ def getGoodSquares(contours,imgOriginal):
    if len(cowSqrs) < 15:
       print("Not enough squares")
       return allR
-
+   """
    # 2nd - FILTER Contours FOR ITS AREA
    # In line 103 the squares are ordered in ascending order of its area
    cowSqrs = sorted(cowSqrs, key=lambda x: x[0],reverse=False)  
@@ -177,7 +177,7 @@ def getGoodSquares(contours,imgOriginal):
          tempCowSqrs.append(actSqr)
          neighbours.append(s)
    cowSqrs = tempCowSqrs
-   """
+   
    font = cv2.FONT_HERSHEY_SIMPLEX # This line defines the font
    for sqr in cowSqrs:
       actIndex = cowSqrs.index(sqr)

@@ -96,7 +96,7 @@ def getGoodSquares(contours,imgOriginal):
       rect_area = w * h
       if(rect_area > 0): # sometimes this value is found
          extent = float(area / rect_area)
-         if (extent >= 0.7 and area > 20):   # tolerance
+         if (extent >= 0.7 and area > 40):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
             cowSqrs.append([area,extent,w,h,x,y])
 
@@ -246,9 +246,9 @@ def boundingRectSort(allRect,criteria):
 
 # this function compares a leg
 # and returns T if exists else F
-def existInAllLegs(allLegs,key):
-   for i in range (len(allLegs)):
-         if allLegs[i] == key:
+def existInAllLegs(list1,key):
+   for i in range(len(list1)):
+         if list1[i] == key:
             return True
    return False
 

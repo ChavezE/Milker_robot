@@ -6,7 +6,7 @@ import LARC1 as rb
 from random import randint
 
 # ------ GLOBAL VARIABLES ---------
-filename = 'image30.jpg'
+filename = 'image2.jpg'
 binValue = 65 # parameter for the threshold
 
 
@@ -44,7 +44,8 @@ def getMyLegs(cowSquares, xTol, minSqrs):
                tempSquares.append([xj,yj,areaj])    
 
       # sorting tempSquares to compare in allSquares
-      tempSquares = sorted(tempSquares, key=lambda x: x[0],reverse=False)
+      tempSquares = rb.sortList(2,tempSquares)
+      tempSquares = rb.sortList(0,tempSquares)
 
       if len(tempSquares) >= minSqrs and not rb.existInAllLegs(allLegs,tempSquares):
          # size RECTIFICATOR comparation
@@ -54,8 +55,12 @@ def getMyLegs(cowSquares, xTol, minSqrs):
          stDeviation = np.std(stList)
          #print "Std Deviation: ", stDeviation
          # ADJUST THIS IF EXPERIMENTALLY TO WORK EFFICIENT
-         if(stDeviation < 500):
+         if(stDeviation < 200):
             allLegs.append(tempSquares)
+   print len(allLegs)
+   for leg in allLegs:
+      
+      print leg
    tempAllLegs = []
    for leg in allLegs:
       commonSqrLegs = [] 
@@ -68,18 +73,14 @@ def getMyLegs(cowSquares, xTol, minSqrs):
       if not rb.existInAllLegs(tempAllLegs,lT):
          tempAllLegs.append(lT)
 
-
-   allLegs = tempAllLegs
-   for x in range (len(allLegs)):
-      allLegs[x] =  sorted(allLegs[x], key=lambda x: x[1],reverse=False)
-
-   return allLegs
+   return tempAllLegs
 
 def haveCommonSquares(list1,list2):
    for squareAct in list1:
       if list2.count(squareAct) != 0:
          return True
    return False
+
 # Recibes a list of lists with (x,y,area) = atom
 # return list with less Standar Deviation in areas
 def minStdDev(allLegs):
@@ -96,21 +97,6 @@ def minStdDev(allLegs):
    
    return allLegs[minDev]
 
-def compareStdDeviation(list1,list2):
-   std1 = 0
-   std2 = 0
-   for sqr in list1:
-      std1 += sqr[2]
-   std1 = np.std(std1)
-
-   for sqr in list2:
-      std2 += sqr[2]
-   std2 = np.std(std2)
-
-   if std1 < std2:
-      return list1
-   else: 
-      return list2
 
 # MAIN LOOP FUNCTION
 def main():
@@ -126,10 +112,14 @@ def main():
    # allRect is a list that contains posible squares ([area,extent,w,h,x,y])
    allRect = rb.getGoodSquares(contours,imgOriginal)
    # Next function is to find all the Legs
-   allLegs = getMyLegs(allRect,20,3)
+   allLegs = getMyLegs(allRect,15,3)
   
    # Print allLegs with different colors
-   print len(allLegs)
+
+   print "Num Legs: ", len(allLegs)
+   for l in allLegs:
+      print l
+
    for i in range(len(allLegs)):
       B = randint(0,255)
       G = randint(0,255)

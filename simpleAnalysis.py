@@ -97,6 +97,7 @@ def minStdDev(allLegs):
    
    return allLegs[minDev]
 
+#def mergeSimilarLegs(allRects):
 
 # MAIN LOOP FUNCTION
 def main():
@@ -111,8 +112,15 @@ def main():
    contours = rb.findContours(thresImage)
    # allRect is a list that contains posible squares ([area,extent,w,h,x,y])
    allRect = rb.getGoodSquares(contours,imgOriginal)
+   #allRect = mergeSimilarLegs(allRect)
+   B = randint(0,255)
+   G = randint(0,255)
+   R = randint(0,255)
+   for rect in allRect:
+      cv2.circle(imgOriginal,(rect[4],rect[5]),6,(B,G,R),-1)
+
    # Next function is to find all the Legs
-   allLegs = getMyLegs(allRect,15,3)
+   allLegs = getMyLegs(allRect,10,3)
   
    # Print allLegs with different colors
 
@@ -127,7 +135,7 @@ def main():
       for sqr in allLegs[i]:
          xA = sqr[0]
          yA = sqr[1]
-         cv2.circle(imgOriginal,(xA,yA),5,(B,G,R),-1)
+         cv2.circle(imgOriginal,(xA,yA),3,(B,G,R),-1)
    
 
    """

@@ -22,7 +22,7 @@ def clearImage(imgOriginal):
 
 def doThresHold(filteredImage,tVal):
 	_, thres1 = cv2.threshold(filteredImage,tVal,255,cv2.THRESH_BINARY_INV)
-	thres1 = cv2.erode(thres1,np.ones((5,5),np.uint8), iterations=2)
+	thres1 = cv2.erode(thres1,np.ones((9,),np.uint8), iterations=2)
 	return thres1
 
 def centerOfContour(contour): # Returns the coordinates of the contour's center

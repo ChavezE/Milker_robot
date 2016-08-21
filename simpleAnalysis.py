@@ -56,12 +56,61 @@ def getMyLegs(cowSquares, xTol, minSqrs):
          # ADJUST THIS IF EXPERIMENTALLY TO WORK EFFICIENT
          if(stDeviation < 500):
             allLegs.append(tempSquares)
-         
+   tempAllLegs = []
+   for leg in allLegs:
+      commonSqrLegs = [] 
+      commonSqrLegs.append(leg)
+      for legCompare in allLegs:
+         if allLegs.index(leg) != allLegs.index(legCompare) and haveCommonSquares(leg,legCompare):
+            commonSqrLegs.append(legCompare)
+      
+      lT = minStdDev(commonSqrLegs)
+      if not rb.existInAllLegs(tempAllLegs,lT):
+         tempAllLegs.append(lT)
 
+
+   allLegs = tempAllLegs
    for x in range (len(allLegs)):
       allLegs[x] =  sorted(allLegs[x], key=lambda x: x[1],reverse=False)
 
    return allLegs
+
+def haveCommonSquares(list1,list2):
+   for squareAct in list1:
+      if list2.count(squareAct) != 0:
+         return True
+   return False
+# Recibes a list of lists with (x,y,area) = atom
+# return list with less Standar Deviation in areas
+def minStdDev(allLegs):
+   minDev = -1
+   stdDev = 100000
+   for i in range(len(allLegs)):
+      stList = []
+      for x in range(len(allLegs[i])):
+         stList.append(allLegs[i][x][2])
+      tempDev = np.std(stList)
+      if tempDev < stdDev:
+         stdDev = tempDev
+         minDev = i
+   
+   return allLegs[minDev]
+
+def compareStdDeviation(list1,list2):
+   std1 = 0
+   std2 = 0
+   for sqr in list1:
+      std1 += sqr[2]
+   std1 = np.std(std1)
+
+   for sqr in list2:
+      std2 += sqr[2]
+   std2 = np.std(std2)
+
+   if std1 < std2:
+      return list1
+   else: 
+      return list2
 
 # MAIN LOOP FUNCTION
 def main():
@@ -78,10 +127,9 @@ def main():
    allRect = rb.getGoodSquares(contours,imgOriginal)
    # Next function is to find all the Legs
    allLegs = getMyLegs(allRect,20,3)
-   for leg in allLegs:
-      print leg
+  
    # Print allLegs with different colors
-   
+   print len(allLegs)
    for i in range(len(allLegs)):
       B = randint(0,255)
       G = randint(0,255)
@@ -89,7 +137,7 @@ def main():
       for sqr in allLegs[i]:
          xA = sqr[0]
          yA = sqr[1]
-         cv2.circle(imgOriginal,(xA,yA),3,(B,G,R),-1)
+         cv2.circle(imgOriginal,(xA,yA),5,(B,G,R),-1)
    
 
    """

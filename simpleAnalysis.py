@@ -6,8 +6,8 @@ import LARC1 as rb
 from random import randint
 
 # ------ GLOBAL VARIABLES ---------
-filename = 'image2.jpg'
-binValue = 65 # parameter for the threshold
+filename = 'image24.jpg'
+binValue = 50 # parameter for the threshold
 
 
 # loads image as imgOriginal
@@ -57,10 +57,6 @@ def getMyLegs(cowSquares, xTol, minSqrs):
          # ADJUST THIS IF EXPERIMENTALLY TO WORK EFFICIENT
          if(stDeviation < 200):
             allLegs.append(tempSquares)
-   print len(allLegs)
-   for leg in allLegs:
-      
-      print leg
    tempAllLegs = []
    for leg in allLegs:
       commonSqrLegs = [] 
@@ -96,18 +92,55 @@ def minStdDev(allLegs):
          minDev = i
    
    return allLegs[minDev]
+def findMiddleOfAllLegs(allLegs):
+   midOfLegs = []
+   font = cv2.FONT_HERSHEY_SIMPLEX
+   for leg in allLegs:
+      xA = 0
+      yA = 0
+      for sqr in leg:
+         xA += sqr[0]
+         yA += sqr[1]
+      xA /= len(leg)
+      yA /= len(leg)
+      # B = randint(0,255)
+      # G = randint(0,255)
+      # R = randint(0,255)
+      # cv2.circle(imgOriginal,(xA,yA),4,(B,G,R),-1)
+      # cv2.putText(imgOriginal,(str(xA)+" "+str(yA)),(xA,yA), font, 0.4,(B,G,R),1,cv2.LINE_AA)
+      midOfLegs.append([xA,yA])
 
-#def mergeSimilarLegs(allRects):
+   
+   tempMOfLegs = []
+   
+   midOfLegs = rb.sortList(0,midOfLegs)
+
+   for i in range(len(midOfLegs)):
+      bF = False
+      for j in range(len(midOfLegs)):
+         if i != j and abs(midOfLegs[i][0] - midOfLegs[j][0]) < 35:
+            bF = True
+            xA = (midOfLegs[i][0] + midOfLegs[j][0])/2
+            yA = (midOfLegs[i][1] + midOfLegs[j][1])/2
+            newCord = [xA,yA]
+            if not rb.existInAllLegs(tempMOfLegs,newCord):
+               tempMOfLegs.append(newCord)
+      if not bF:
+         tempMOfLegs.append(midOfLegs[i])
+   midOfLegs = tempMOfLegs 
+   
+   return midOfLegs
 
 # MAIN LOOP FUNCTION
 def main():
    # NOTE: rb stands dor RoBorregos and is used to when implementing
    # a method that is in the module called LARC1.py
-
+   font = cv2.FONT_HERSHEY_SIMPLEX
    filteredImage = rb.clearImage(imgOriginal)
    thresImage = rb.doThresHold(filteredImage,binValue)
    cv2.imshow('T',thresImage)
-
+   # Draw center of the image
+   cv2.circle(imgOriginal,(360,240),5,(255,0,0),-1)
    # Getting contours here (and other thing we're not using)
    contours = rb.findContours(thresImage)
    # allRect is a list that contains posible squares ([area,extent,w,h,x,y])
@@ -116,12 +149,28 @@ def main():
    B = randint(0,255)
    G = randint(0,255)
    R = randint(0,255)
-   for rect in allRect:
-      cv2.circle(imgOriginal,(rect[4],rect[5]),6,(B,G,R),-1)
+   #for rect in allRect:
+      #cv2.circle(imgOriginal,(rect[4],rect[5]),6,(B,G,R),-1)
 
    # Next function is to find all the Legs
    allLegs = getMyLegs(allRect,10,3)
-  
+   # Next function finds the middle point of each leg
+   midOfLegs = findMiddleOfAllLegs(allLegs)
+   for m in midOfLegs:
+      cv2.putText(imgOriginal,(str(m[0])+", "+str(m[1])),(m[0],m[1]), font, 0.4,(B,G,R),1,cv2.LINE_AA)
+   # Find a the mean (x,y) of midOfLegs
+   xAct = 0
+   yAct = 0
+   for mid in midOfLegs:
+      xAct += mid[0]
+      yAct += mid[1]
+   xAct /= len(midOfLegs)
+   yAct /= len(midOfLegs)
+   B = randint(0,255)
+   G = randint(0,255)
+   R = randint(0,255)
+   cv2.circle(imgOriginal,(xAct,yAct),8,(B,G,R),-1)
+   cv2.putText(imgOriginal,(str(xAct)+", "+str(yAct)),(xAct,yAct), font, 0.4,(B,G,R),1,cv2.LINE_AA)
    # Print allLegs with different colors
 
    print "Num Legs: ", len(allLegs)

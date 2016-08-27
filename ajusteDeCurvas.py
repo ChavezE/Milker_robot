@@ -6,14 +6,13 @@ import math
 # a coordinate of a square inside the body square
 # Equations are got from this webpage: 
 # http://portales.puj.edu.co/objetosdeaprendizaje/Online/OA10/capitulo3/3.6.htm
-def ajusteDeCurvas(bodyCoords):
+def ajusteDeCurvas(bodyCoords,n):
 	# These lists and variables are used to calculate A and B
 	# to get a polynomial of 1st grade: y = Ax + B
 	Xi = []
 	Yi = []
 	XiYi = []
 	Xi2 = []
-	n = len(bodyCoords)	
 	# This cycle is to fill up all the lists in order to compute A and B
 	for coord in bodyCoords:
 		xT = coord[0]
@@ -29,13 +28,13 @@ def ajusteDeCurvas(bodyCoords):
 	sXiYi = sum(XiYi)
 	sXi2 = sum(Xi2)
 	# Now its time to compute A and B
-	A = ((n*sXiYi)-(sXi*sYi))/((n*sXi2)-(pow(sXi,2)))
-	B = ((sXi2*sYi)-(sXiYi*sXi))/((n*sXi2)-(pow(sXi,2)))
-	theta = math.tan(A)
-	theta = 180/math.pi
+	A = float((n*sXiYi)-(sXi*sYi))/((n*sXi2)-(pow(sXi,2)))
+	B = float((sXi2*sYi)-(sXiYi*sXi))/((n*sXi2)-(pow(sXi,2)))
+	theta = float(math.atan(A))
+	theta = float(theta*180/math.pi)
 	return theta,A,B
 
 
-pruebita = [[1,1],[2,2],[3,3]]
-theta,m,b = ajusteDeCurvas(pruebita)
-print theta
+# pruebita = [[1,1],[2,2],[3,3]]
+# theta,m,b = ajusteDeCurvas(pruebita, len(pruebita))
+# print theta

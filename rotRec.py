@@ -6,8 +6,8 @@ import LARC1 as rb
 import random
 
 
-filename = 'image35.jpg'
-binValue = 75  # parameter for the threshold
+filename = 'image3.jpg'
+binValue = 90  # parameter for the threshold
 
 
 # loads image as imgOriginal
@@ -58,7 +58,7 @@ def getHorizontalSqrs(cowRectangles, myLegs):
 			for rT in temCowRows:
 				x = rT[0]
 				y = rT[1]
-				cv2.circle(imgOriginal,(x,y),4,(b,g,r),-1)
+				cv2.circle(imgOriginal,(x,y),10,(b,g,r),-1)
 	return cowRows
 
 # this function compares a leg
@@ -94,7 +94,7 @@ def getMyLegs(cowSquares, xTol, minSqrs):
       tempSquares = sorted(tempSquares, key=lambda x: x[2],reverse=False)
       tempSquares = sorted(tempSquares, key=lambda x: x[0],reverse=False)
 
-      if len(tempSquares) >= minSqrs and not rb.existInAllLegs(allLegs,tempSquares):
+      if len(tempSquares) >= minSqrs and not existInAllLegs(allLegs,tempSquares):
          # size RECTIFICATOR comparation
          stList = []
          for x in range(len(tempSquares)):
@@ -114,7 +114,7 @@ def getMyLegs(cowSquares, xTol, minSqrs):
             commonSqrLegs.append(legCompare)
       
       lT = minStdDev(commonSqrLegs)
-      if not rb.existInAllLegs(tempAllLegs,lT):
+      if not existInAllLegs(tempAllLegs,lT):
          tempAllLegs.append(lT)
 
 
@@ -283,7 +283,8 @@ def getHorizontalLines(cowSquares):
 	return allLines
 
 def neighboors(cowSquares):
-	radius = 70
+	radius = 150
+	neigh = []
 	for i in range (len(cowSquares)):
 		xi = cowSquares[i][4]
 		yi = cowSquares[i][5]
@@ -295,8 +296,10 @@ def neighboors(cowSquares):
 				if ((abs(xi-xj) < radius) and (abs(yi-yj) < radius)):
 					count = count + 1
 		if (count > 2):
-			cv2.circle(imgOriginal,(xi,yi),10,(0,255,0),-1)
+			cv2.circle(imgOriginal,(xi,yi),10,(0,255,0),2)
+			neigh.append(cowSquares[i])
 
+	return neigh
 
 
 ''' FINISHES HERE '''
@@ -336,7 +339,9 @@ def loop():
 	print "Centros de Masa :", legsMassCenter
 
 	print "Todas las lineas a continuacion"
-	neighboors(cowRectangles)
+	n = neighboors(cowRectangles)
+	cowRows = getHorizontalSqrs(n,myLegs)
+	print "lineas :", cowRows
 	# l = getHorizontalLines(cowRectangles)
 	# print l
 

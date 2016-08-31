@@ -143,7 +143,10 @@ def loop():
 
 	while (1):
 		incom = ''
-		incom = ser.read(3)
+		while incom != 'R':
+			ser.flush()
+			incom = ser.read(1)
+
 		if incom == 'R':
 			_, imgOriginal = cap.read()
 			filteredImage = rb.clearImage(imgOriginal)
@@ -178,15 +181,30 @@ def loop():
 			#theta,m,b = rb.ajusteDeCurvas(n,len(n))
 			cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
 			print "angulo ",theta
-			theta = int(theta)
+			print "ordenada al origen", b
+			cv2.imshow('i',imgOriginal)
+			c = 0
+			while c != 27:
+				c = cv2.waitKey(50)
+				break
+			
+			cv2.destroyAllWindows()
+
+			theta = abs(int(theta))
 			theta = str(theta)
 			ser.write(theta)
-			print "ordenada al origen", b
+			echo = ser.read(len(theta))
+			print "Este es el echo: ", echo
+
+			if echo == theta:
+				print 'jalando'
+			else:
+				print 'no jalo'
 
 			
 
-	cv2.imshow(filename,imgOriginal)
-	cv2.waitKey(0)
+	
+	
 
 
 
@@ -194,4 +212,4 @@ def loop():
 
 
 loop()
-cv2.destroyAllWindows()
+

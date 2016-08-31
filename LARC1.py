@@ -252,4 +252,36 @@ def existInAllLegs(list1,key):
             return True
    return False
 
+# This function is to implement the clustering algorithm 
+# PARAMETERS: number of clusters to search for, list of coordinates of the cow
+# and number of iterations before returning the final clusters
+def findClusters(num_clusters, cowRectangles,iterations):
+   # First, the list clusters is initialized with n number of Clusters
+   clusters = []
+   for iA in range(num_clusters):
+      tList = []
+      cluster = Cluster([0,0],tList,tList)
+      clusters.append(cluster)
+   clusters[0].set_center([320,0])
+   clusters[1].set_center([0,480])
+   clusters[2].set_center([640,480])
+   for dummy_iterator in range(iterations):
+      for rect in cowRectangles:
+         dist = float('inf')
+         index = 0
+         for i in range(len(clusters)):
+            actClust = clusters[i]
+            if(actClust.distance(rect) < dist):
+               dist = actClust.distance(rect)
+               index = i
+         clusters[index].add_point(rect)
+      for cluster in clusters:
+         cluster.update_points()
+         cluster.calculate_center()
+
+   return clusters
+
+
+
+
 

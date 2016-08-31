@@ -4,6 +4,7 @@ import math
 import numpy as np
 import LARC1 as rb
 import random
+import ajusteDeCurvas as aj
 
 
 filename = 'image3.jpg'
@@ -367,7 +368,12 @@ def loop():
 	x = 720 / 2 
 	y = 480 / 2
 	cv2. circle(imgOriginal, (x,y),5,(0,0,255),-1)
-
+	theta,m,b = aj.ajusteDeCurvas(n,len(n))
+	x1 = 50
+	x2 = 600
+	y1 = int(x1*m+b)
+	y2 = int(x2*m+b)
+	cv2.line(imgOriginal,(x1,y1),(x2,y2),(255,255,0),3)
 	cv2.imshow(filename,imgOriginal)
 	cv2.waitKey(0)
 

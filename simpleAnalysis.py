@@ -4,10 +4,11 @@ import time
 import math
 import LARC1 as rb
 from random import randint
+import ajusteDeCurvas as aj
 
 # ------ GLOBAL VARIABLES ---------
-filename = 'image24.jpg'
-binValue = 50 # parameter for the threshold
+filename = 'image7.jpg'
+binValue = 90 # parameter for the threshold
 
 
 # loads image as imgOriginal
@@ -137,8 +138,10 @@ def main():
    # a method that is in the module called LARC1.py
    font = cv2.FONT_HERSHEY_SIMPLEX
    filteredImage = rb.clearImage(imgOriginal)
+   #cv2.imshow('G',filteredImage)
    thresImage = rb.doThresHold(filteredImage,binValue)
-   cv2.imshow('T',thresImage)
+   #cv2.imshow('T',thresImage)
+   '''
    # Draw center of the image
    cv2.circle(imgOriginal,(360,240),5,(255,0,0),-1)
    # Getting contours here (and other thing we're not using)
@@ -164,6 +167,7 @@ def main():
    for mid in midOfLegs:
       xAct += mid[0]
       yAct += mid[1]
+
    xAct /= len(midOfLegs)
    yAct /= len(midOfLegs)
    B = randint(0,255)
@@ -199,7 +203,14 @@ def main():
       text = str(cnt)
       cv2.putText(imgOriginal,text,(x,y), font, 1,(0,0,255),1,cv2.LINE_AA)
    """   
-   cv2.imshow('im',imgOriginal)
+   '''
+   img2 = aj.histogramEqualization(imgOriginal)
+   cv2.imshow('E',img2)
+   img2 = rb.clearImage(img2)
+   cv2.imshow('G',img2)
+   img2 = rb.doThresHold(img2,50)
+   cv2.imshow('T',img2)
+   
    cv2.waitKey(0)
 
 

@@ -33,6 +33,16 @@ def ajusteDeCurvas(bodyCoords,n):
 	theta = float(math.atan(A))
 	theta = float(theta*180/math.pi)
 	return theta,A,B
+def histogramEqualization(img):
+	hist,bins = np.histogram(img.flatten(),256,[0,256])
+	cdf = hist.cumsum()
+	cdf_normalized = cdf * hist.max()/cdf.max()
+	cdf_m = np.ma.masked_equal(cdf,0)
+	cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
+	cdf = np.ma.filled(cdf_m,0).astype('uint8')
+	img2 = cdf[img]
+	return img2
+
 
 
 # pruebita = [[1,1],[2,2],[3,3]]

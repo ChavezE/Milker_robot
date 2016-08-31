@@ -6,8 +6,9 @@ import LARC1 as rb
 import random
 
 
-filename = 'image1.jpg'
-binValue = 90  # parameter for the threshold
+
+filename = 'image11.jpg'
+binValue = 100  # parameter for the threshold
 
 # CLUSTERING CLASS
 
@@ -67,7 +68,6 @@ class Cluster:
 		return list(self.old_points)
 
 
-
 # This function is to implement the clustering algorithm 
 # PARAMETERS: number of clusters to search for, list of coordinates of the cow
 # and number of iterations before returning the final clusters
@@ -77,9 +77,15 @@ def findClusters(num_clusters, cowRectangles,iterations):
 	for iA in range(num_clusters):	
 		cluster = Cluster([0,0])
 		clusters.append(cluster)
-	clusters[0].set_center([320,150])
-	clusters[1].set_center([0,480])
-	clusters[2].set_center([640,480])
+	if num_clusters == 3:
+		clusters[0].set_center([320,150])
+		clusters[1].set_center([0,480])
+		clusters[2].set_center([640,480])
+	elif num_clusters == 4:
+		clusters[0].set_center([640,0])
+		clusters[1].set_center([0,480])
+		clusters[2].set_center([640,480])
+		clusters[3].set_center([0,0])
 	for cluster in clusters:
 		print cluster.get_center()
 
@@ -144,12 +150,12 @@ def loop():
 	# [area,extent,w,h,x,y]
 	n = neighboors(cowRectangles)
 	# getting body here !!!! 
-	clusters = findClusters(3,n,2)
+	clusters = findClusters(3,n,100)
 
 	for i in range(len(clusters)):
-		b = int ( random.uniform(50,255))
-		g = int ( random.uniform(50,255))
-		r = int ( random.uniform(50,255))
+		b = int ( random.uniform(0,255))
+		g = int ( random.uniform(0,255))
+		r = int ( random.uniform(0,255))
 		list_1 = clusters[i].get_old_points()
 		xc,yc = clusters[i].get_center()
 		cv2.circle(imgOriginal,(xc,yc),15,(b,g,r),3)
@@ -158,9 +164,16 @@ def loop():
 			y = list_1[j][1]
 			cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
 
+
 	for cluster in clusters:
 		print "---------"
 		print cluster.get_old_points()
+	theta,m,b = rb.ajusteDeCurvas(clusters[0].get_old_points())
+	#theta,m,b = rb.ajusteDeCurvas(n,len(n))
+	cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
+	print "angulo ",theta
+	print "ordenada al origen", b
+
 	cv2.imshow(filename,imgOriginal)
 	cv2.waitKey(0)
 

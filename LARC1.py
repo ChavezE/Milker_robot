@@ -18,6 +18,7 @@ import numpy as np
 def clearImage(imgOriginal):
 	imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
 	imGray = cv2.GaussianBlur(imGray, (3,3), 2)
+
 	return imGray
 
 def doThresHold(filteredImage,tVal):
@@ -65,18 +66,22 @@ def findMedian(index,l):
       return l[len(l)/2][index]
    else:              # The lenght of the list is even
       return (l[len(l)/2][index] + l[len(l)/2 + 1][index])/2
-"""
+
 def printCowSquares(imgOriginal,G,B,R,sqrs):
-	for sqr in sqrs:
+   for sqr in sqrs:
       w = sqr[2]
       h = sqr[3]
       x = sqr[4]
       y = sqr[5]
       cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
-"""
+
 # This method will recibe all countours in image and
 # will make all necesary filtering in order to achive
 # countors with high probability of being cow rectangles
+# it returns a mutidimensional list like this: 
+#     [][area,extent,w,h,x,y]
+# should be changed to [][x,y,w,h,area,extent] 
+# list is sorted with respect to WHAT?
 def getGoodSquares(contours,imgOriginal):
 
    # ----VARIABLES----
@@ -96,106 +101,22 @@ def getGoodSquares(contours,imgOriginal):
       rect_area = w * h
       if(rect_area > 0): # sometimes this value is found
          extent = float(area / rect_area)
-         if (extent >= 0.7 and area > 40):   # tolerance
+         if (extent >= 0.7 and area >= 50):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
-            cowSqrs.append([area,extent,w,h,x,y])
+            aspect_ratio = float(w)/h
+            if aspect_ratio > 0.2 and aspect_ratio < 2:
+               cowSqrs.append([area,extent,w,h,x,y])
 
-   # We will continue analyzing the contours ONLY if we have at least 15
-   if len(cowSqrs) < 15:
-      print("Not enough squares")
-      return allR
-   """
-   # 2nd - FILTER Contours FOR ITS AREA
-   # In line 103 the squares are ordered in ascending order of its area
-   cowSqrs = sorted(cowSqrs, key=lambda x: x[0],reverse=False)  
-
-   # FILTER SQUARES CREATING AN AVERAGE THAT DISCARDS THE 5 BIGGEST CONTS AND 5 SMALLEST
-   # **** This Filter works better than the median filter ******
-   avgArea = 0
-   for i in range(5, len(cowSqrs) - 6):
-      avgArea += cowSqrs[i][0]
-   avgArea /= (len(cowSqrs) - 10)
-   #print "Avg Area", (avgArea)
-   
-   # THIS CYCLE remove the contours that are 3 times bigger or less 
-   # than 0.1 of the median area
-   for ind in range(len(cowSqrs)):
-      areaTemp = cowSqrs[ind][0]
-      if not((areaTemp > avgArea * 3) or (areaTemp < avgArea * 0.1)):
-         #tempAllR.append(cnt)  
-         tempCowSqrs.append(cowSqrs[ind])  
-   #allR = tempAllR
-   cowSqrs = tempCowSqrs
-   #print "Len Conts: ", len(allR)
-   #cv2.drawContours(imgOriginal, allR, -1, (255,0,0), 2)
-   
-   # FILTER squares for its POSITION on the image
-   cowSqrs = sorted(cowSqrs, key=lambda x: x[5],reverse=False)
-   # Clean temp variables
-   tempCowSqrs = []
-   neighX = [] # Here we will store the number of neighbours in X
-   neighY = [] # Here we will store the number of neighbours in Y
-   neighbours = []
-   closeNeigh = []
-
-   # The lists are initialiced with 0's
-   for i in range(len(cowSqrs)):
-      neighX.append(0) 
-      neighY.append(0)
-      closeNeigh.append(0)
-      
-   # Each contours is compared with the remaining next squares in the list
-   for actSqr in cowSqrs:
-      # The next 3 variables are from the current square
-      actIndex = cowSqrs.index(actSqr)
-      actY = actSqr[5]
-      actX = actSqr[4]
-      r = 70
-      for i in range(1,len(cowSqrs)):
-
-         compareIndex = actIndex + i
-         if(compareIndex < len(cowSqrs)):
-            compareY = cowSqrs[compareIndex][5]
-            compareX = cowSqrs[compareIndex][4]
-            d = math.sqrt(pow(compareX - actX,2) + pow(compareY - actY,2))
-            if(abs(actY - compareY) <= 15):
-               neighY[actIndex] += 1
-               neighY[compareIndex] += 1
-            if(abs(actX - compareX) <= 10):
-               neighX[actIndex] += 1
-               neighX[compareIndex] += 1
-            if(d <= r):
-               closeNeigh[actIndex] += 1
-               closeNeigh[compareIndex] += 1
-         else:
-            break
-   # Now we will remove the squares that have less than 4 neighbours
-   for actSqr in cowSqrs:
-      i = cowSqrs.index(actSqr)
-      s = neighX[i] + neighY[i]
-      if(s >= 4 and closeNeigh[i] >= 2):
-         tempCowSqrs.append(actSqr)
-         neighbours.append(s)
-   cowSqrs = tempCowSqrs
-   
-   font = cv2.FONT_HERSHEY_SIMPLEX # This line defines the font
-   for sqr in cowSqrs:
-      actIndex = cowSqrs.index(sqr)
-      x = sqr[4]
-      y = sqr[5]
-      text = str(neighbours[actIndex])
-      cv2.putText(imgOriginal,text,(x,y), font, 0.4,(0,0,255),1,cv2.LINE_AA)
-
-   
    # Print elements in cowSqrs
    for sqr in cowSqrs:
       w = sqr[2]
       h = sqr[3]
       x = sqr[4]
-      y = sqr[5]
-      cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(0,255,0),3)
-   """
-   # AT THE END, RETURN THE CONTOURS THAT BELONG TO THE COW                                     
+      y = sqr[5] 
+      #cv2.circle(imgOriginal,(x,y),3,(255,255,0),-1)
+      cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(255,255,255),3)
+   
+   # AT THE END, RETURN THE LIST THAT BELONG TO THE COW                                     
    return cowSqrs
 
 # This function is still on progress, hope to return well ordered body of cow
@@ -218,7 +139,7 @@ def getBody(cowRectangles,imgOriginal,totLines,epsilon):
 		while(abs(cowRectangles[i][5] - yTest) < epsilon):
 			x = cowRectangles[i][4]
 			y = cowRectangles[i][5]
-			cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
+			#cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
 			#bodyLines.insert(0,allRect[i])
 			singleLine.append((x,y))
 			i += 1
@@ -244,13 +165,34 @@ def boundingRectSort(allRect,criteria):
  
 	return (allRect, boundingBoxes)
 
-# this function compares a leg
-# and returns T if exists else F
-def existInAllLegs(list1,key):
-   for i in range(len(list1)):
-         if list1[i] == key:
-            return True
-   return False
+def ajusteDeCurvas(bodyCoords):
+   # These lists and variables are used to calculate A and B
+   # to get a polynomial of 1st grade: y = Ax + B
+   n = len(bodyCoords) 
+   Xi = []
+   Yi = []
+   XiYi = []
+   Xi2 = []
+   # This cycle is to fill up all the lists in order to compute A and B
+   for coord in bodyCoords:
+      xT = coord[0]
+      yT = coord[1]
+      Xi.append(xT)
+      Yi.append(yT)
+      XiYi.append(xT*yT)
+      Xi2.append(pow(xT,2))
+   # The reason to create lists is to get the sum of all its elements 
+   # so it will be computed the sum of each of the lists
+   sXi = sum(Xi)
+   sYi = sum(Yi)
+   sXiYi = sum(XiYi)
+   sXi2 = sum(Xi2)
+   # Now its time to compute A and B
+   A = float((n*sXiYi)-(sXi*sYi))/((n*sXi2)-(pow(sXi,2)))
+   B = float(((sXi2*sYi)-(sXiYi*sXi))/((n*sXi2)-(pow(sXi,2))))
+   theta = float(math.atan(A))
+   theta = float(theta*180/math.pi)
+   return theta,A,B
 
 # This function is to implement the clustering algorithm 
 # PARAMETERS: number of clusters to search for, list of coordinates of the cow

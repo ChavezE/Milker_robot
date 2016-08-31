@@ -4,12 +4,14 @@ import math
 import numpy as np
 import LARC1 as rb
 import random
+import serial
 
 
 
 filename = 'image11.jpg'
 binValue = 100  # parameter for the threshold
-
+cap = cv2.VideoCapture(0)
+ser = serial.Serial('/dev/ttyACM0',9600, timeout = 3)
 # CLUSTERING CLASS
 
 
@@ -139,40 +141,49 @@ def neighboors(cowSquares):
 
 def loop():
 
-	
-	filteredImage = rb.clearImage(imgOriginal)
-	thresImage = rb.doThresHold(filteredImage,binValue)
-	cv2.imshow('T',thresImage)
-	contours = rb.findContours(thresImage)
-	cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
-	cowRectangles = rb.getGoodSquares(contours,imgOriginal)
-	# We have this order 
-	# [area,extent,w,h,x,y]
-	n = neighboors(cowRectangles)
-	# getting body here !!!! 
-	clusters = findClusters(3,n,100)
+	while (1):
+		incom = ''
+		incom = ser.read(3)
+		if incom == 'R':
+			_, imgOriginal = cap.read()
+			filteredImage = rb.clearImage(imgOriginal)
+			thresImage = rb.doThresHold(filteredImage,binValue)
+			cv2.imshow('T',thresImage)
+			contours = rb.findContours(thresImage)
+			cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
+			cowRectangles = rb.getGoodSquares(contours,imgOriginal)
+			# We have this order 
+			# [area,extent,w,h,x,y]
+			n = neighboors(cowRectangles)
+			# getting body here !!!! 
+			clusters = findClusters(3,n,100)
 
-	for i in range(len(clusters)):
-		b = int ( random.uniform(0,255))
-		g = int ( random.uniform(0,255))
-		r = int ( random.uniform(0,255))
-		list_1 = clusters[i].get_old_points()
-		xc,yc = clusters[i].get_center()
-		cv2.circle(imgOriginal,(xc,yc),15,(b,g,r),3)
-		for j in range (len(list_1)):
-			x = list_1[j][0]
-			y = list_1[j][1]
-			cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
+			# for i in range(len(clusters)):
+			# 	b = int ( random.uniform(0,255))
+			# 	g = int ( random.uniform(0,255))
+			# 	r = int ( random.uniform(0,255))
+			# 	list_1 = clusters[i].get_old_points()
+			# 	xc,yc = clusters[i].get_center()
+			# 	cv2.circle(imgOriginal,(xc,yc),15,(b,g,r),3)
+			# 	for j in range (len(list_1)):
+			# 		x = list_1[j][0]
+			# 		y = list_1[j][1]
+			# 		cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
 
 
-	for cluster in clusters:
-		print "---------"
-		print cluster.get_old_points()
-	theta,m,b = rb.ajusteDeCurvas(clusters[0].get_old_points())
-	#theta,m,b = rb.ajusteDeCurvas(n,len(n))
-	cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
-	print "angulo ",theta
-	print "ordenada al origen", b
+			for cluster in clusters:
+				print "---------"
+				print cluster.get_old_points()
+			theta,m,b = rb.ajusteDeCurvas(clusters[0].get_old_points())
+			#theta,m,b = rb.ajusteDeCurvas(n,len(n))
+			cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
+			print "angulo ",theta
+			theta = int(theta)
+			theta = str(theta)
+			ser.write(theta)
+			print "ordenada al origen", b
+
+			
 
 	cv2.imshow(filename,imgOriginal)
 	cv2.waitKey(0)

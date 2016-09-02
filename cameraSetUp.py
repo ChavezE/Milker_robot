@@ -8,12 +8,15 @@ when searching for the cow. The command that is used is the 'uvcdynctrl'.
 '''
 import gtk
 import subprocess
+import time
 
 UVCDYNCTRLEXEC = "/usr/bin/uvcdynctrl"
 
 def initializeCamera():
 	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Pan Reset',"--",'1'])
+	time.sleep(3)
 	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Tilt Reset',"--",'1'])
+	time.sleep(3)
 	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Backlight Compensation',"--",'0'])
 	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Exposure, Auto',"--",'1'])
 	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'White Balance Temperature, Auto',"--",'0'])

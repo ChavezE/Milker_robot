@@ -1,6 +1,11 @@
+# ------ LIBRARIES ----------
 import cv2
+import time
+import math
 import numpy as np
+import random
 import LARC1 as rb
+# ---------------------------
 
 filename = 'image35.jpg'
 cap = cv2.VideoCapture(0)
@@ -13,7 +18,6 @@ cap = cv2.VideoCapture(0)
 def loadImage(capName):
     
     imgOriginal = cv2.imread(capName)
-    imgOriginal = cv2.resize(imgOriginal, (720 ,480))
     return imgOriginal
 
 #imgOriginal = loadImage(filename)

@@ -55,7 +55,7 @@ def neighboors(cowSquares, minNeig):
 def basicProcess(imgOriginal):
 	filteredImage = rb.clearImage(imgOriginal)
 	thresImage = rb.doThresHold(filteredImage,binValue)
-	cv2.imshow('T',thresImage)
+	#v2.imshow('T',thresImage)
 	contours = rb.findContours(thresImage)
 	cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
 	cowRectangles = rb.getGoodSquares(contours,imgOriginal)
@@ -92,9 +92,9 @@ def basicProcess(imgOriginal):
 	# x = 720 / 2 
 	# y = 480 / 2
 	# cv2. circle(imgOriginal, (x,y),5,(0,0,255),-1)
-	cv2.imshow(filename,imgOriginal)
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
+	#cv2.imshow(filename,imgOriginal)
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
 
 	return theta
 
@@ -104,7 +104,17 @@ def basicProcess(imgOriginal):
 ############### MAIN LOOP ######################
 ################################################
 def loop():
-        letter = ' '
+    
+    while(1):
+    	request = ' '
+    	while not(ser.inWaiting()> 0):
+    		pass
+    	request = ser.read(1)
+
+    	if(request == 'R'):
+    		print "Request recived"
+
+    '''
 	while(letter != 'f'):
 		for i in range(4):
 			cap.grab()
@@ -118,7 +128,7 @@ def loop():
 		if k == 27:
 			break
                 letter = raw_input()
-
+    '''
 
 
 

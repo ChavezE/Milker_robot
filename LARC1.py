@@ -74,17 +74,21 @@ class Cluster:
    def get_old_points(self):
       return list(self.old_points)
       
-# Does some guassian filtering to remove noise and converts image to gray scale
+# Does some guassian filtering to remove noise and converts image to gray scale :)
 def clearImage(imgOriginal):
-	imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
-	imGray = cv2.GaussianBlur(imGray, (3,3), 2)
 
-	return imGray
+   imgOriginal[480*0.65:480,0:640] = [255,255,255]
+   imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
+   imGray = cv2.GaussianBlur(imGray, (3,3), 2)
+
+   return imGray
 
 def doThresHold(filteredImage,tVal):
 	_, thres1 = cv2.threshold(filteredImage,tVal,255,cv2.THRESH_BINARY_INV)
-	thres1 = cv2.erode(thres1,np.ones((3,3),np.uint8), iterations=3)
+	thres1 = cv2.erode(thres1,np.ones((9,9),np.uint8), iterations=1)
 	return thres1
+
+
 
 def centerOfContour(contour): # Returns the coordinates of the contour's center
    M = cv2.moments(contour)
@@ -143,7 +147,7 @@ def getGoodSquares(contours,imgOriginal):
       rect_area = w * h
       if(rect_area > 0): # sometimes this value is found
          extent = float(area / rect_area)
-         if (extent >= 0.8 and area >= 100 and area <=4000):   # tolerance
+         if (extent >= 0.8 and area >= 100):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
             aspect_ratio = float(w)/h
             if aspect_ratio > 0.2 and aspect_ratio < 2:
@@ -242,29 +246,12 @@ def ajusteDeCurvas(bodyCoords):
 # This function is to implement the clustering algorithm 
 # PARAMETERS: number of clusters to search for, list of coordinates of the cow
 # and number of iterations before returning the final clusters
-def findClusters(num_clusters, cowRectangles,iterations):
+def findClusters(num_clusters, cowRectangles,iterations,coordClusters):
    # First, the list clusters is initialized with n number of Clusters
    clusters = []
    for iA in range(num_clusters):
-      cluster = Cluster([0,0])
+      cluster = Cluster(coordClusters[iA])
       clusters.append(cluster)
-   if num_clusters == 3:
-      clusters[0].set_center([320,150])
-      clusters[1].set_center([150,480])
-      clusters[2].set_center([500,480])
-   elif num_clusters == 6:
-      clusters[0].set_center([80,200])
-      clusters[1].set_center([320,200])
-      clusters[2].set_center([560,200])
-      clusters[3].set_center([80,300])
-      clusters[4].set_center([320,300])
-      clusters[5].set_center([560,300])
-   elif num_clusters == 5:
-      clusters[0].set_center([320,240])
-      clusters[1].set_center([10,240])
-      clusters[2].set_center([180,240])
-      clusters[3].set_center([500,240])
-      clusters[4].set_center([630,240])
     
    for dummy_iterator in range(iterations):
       for rect in cowRectangles:
@@ -282,6 +269,12 @@ def findClusters(num_clusters, cowRectangles,iterations):
          cluster.update_points()
    
    return clusters
+
+# This function will analyze the image in order to determine if there is a cow.
+# It will return a boolean variable in order to say if the cow was found or not.
+def isThereACow(tImg):
+   foundCow = False
+
 
 
 

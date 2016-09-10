@@ -12,16 +12,14 @@ import time
 
 UVCDYNCTRLEXEC = "/usr/bin/uvcdynctrl"
 
-def initializeCamera():
-	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Pan Reset',"--",'1'])
-	time.sleep(3)
-	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Tilt Reset',"--",'1'])
-	time.sleep(3)
-	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Backlight Compensation',"--",'0'])
-	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Exposure, Auto',"--",'1'])
-	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'White Balance Temperature, Auto',"--",'0'])
-	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Focus',"--",'0'])
-	subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Gain',"--",'30'])
+subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Pan Reset',"--",'1'])
+time.sleep(3)
+subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Tilt Reset',"--",'1'])
+time.sleep(3)
+subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Backlight Compensation',"--",1'0'])
+time.sleep(3)
+subprocess.Popen([UVCDYNCTRLEXEC,"-s",'White Balance Temperature, Auto',"--",'0'])
+time.sleep(3)
+subprocess.Popen([UVCDYNCTRLEXEC,"-s",'Tilt (relative)',"--",'-1200'])
+        
 
-
-initializeCamera()

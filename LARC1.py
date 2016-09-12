@@ -77,7 +77,7 @@ class Cluster:
 # Does some guassian filtering to remove noise and converts image to gray scale :)
 def clearImage(imgOriginal):
 
-   imgOriginal[480*0.65:480,0:640] = [255,255,255]
+   imgOriginal[480*0.75:480,0:640] = [255,255,255]
    imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
    imGray = cv2.GaussianBlur(imGray, (3,3), 2)
 
@@ -87,8 +87,6 @@ def doThresHold(filteredImage,tVal):
 	_, thres1 = cv2.threshold(filteredImage,tVal,255,cv2.THRESH_BINARY_INV)
 	thres1 = cv2.erode(thres1,np.ones((9,9),np.uint8), iterations=1)
 	return thres1
-
-
 
 def centerOfContour(contour): # Returns the coordinates of the contour's center
    M = cv2.moments(contour)
@@ -147,7 +145,7 @@ def getGoodSquares(contours,imgOriginal):
       rect_area = w * h
       if(rect_area > 0): # sometimes this value is found
          extent = float(area / rect_area)
-         if (extent >= 0.8 and area >= 100):   # tolerance
+         if (extent >= 0.7 and area >= 50):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
             aspect_ratio = float(w)/h
             if aspect_ratio > 0.2 and aspect_ratio < 2:
@@ -246,10 +244,10 @@ def ajusteDeCurvas(bodyCoords):
 # This function is to implement the clustering algorithm 
 # PARAMETERS: number of clusters to search for, list of coordinates of the cow
 # and number of iterations before returning the final clusters
-def findClusters(num_clusters, cowRectangles,iterations,coordClusters):
+def findClusters(cowRectangles,iterations,coordClusters):
    # First, the list clusters is initialized with n number of Clusters
    clusters = []
-   for iA in range(num_clusters):
+   for iA in range(len(coordClusters)):
       cluster = Cluster(coordClusters[iA])
       clusters.append(cluster)
     

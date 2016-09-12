@@ -8,10 +8,8 @@ import LARC1 as rb
 # ---------------------------
 
 filename = 'image5.jpg'
-binValue = 120	 # parameter for the threshold
+binValue = 110	 # parameter for the threshold
 cap = cv2.VideoCapture(0)
-
-
 
 # loads image as imgOriginal
 # This will have to change to taking snap everytime needed
@@ -53,7 +51,7 @@ def neighboors(cowSquares, minNeig):
 # - Aprox Distance
 # - Center missmatch 
 def basicProcess(imgOriginal):
-	filteredImage = rb.clearImage(imgOriginal)
+	filteredImage = rb.clearImage(imgOriginal)	
 	thresImage = rb.doThresHold(filteredImage,binValue)
 	cv2.imshow('T',thresImage)
 	contours = rb.findContours(thresImage)
@@ -64,14 +62,16 @@ def basicProcess(imgOriginal):
 	# Good processing here, still have to make sure no cows are overlaping
 
 	n = neighboors(cowRectangles,2)
-	for l in n:
-		print l
+	for nt in n:
+                print nt
 	coordClusters = []
-	coordClusters.append([160,144])
-	coordClusters.append([320,144])
-	coordClusters.append([480,144])
-
-	clusters = rb.findClusters(3,n,1,coordClusters)
+	coordClusters.append([600,180])
+	coordClusters.append([425,180])
+	coordClusters.append([319,180])
+	coordClusters.append([213,180])
+        coordClusters.append([40,180])	
+	
+	clusters = rb.findClusters(n,1,coordClusters)
 	for i in range(len(clusters)):
 		b = int ( random.uniform(50,255))
 		g = int ( random.uniform(50,255))
@@ -83,7 +83,8 @@ def basicProcess(imgOriginal):
 			x = list_1[j][0]
 			y = list_1[j][1]
 			cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
-
+        return 0,0
+        '''
 	# Interpretation of cow properties below #
 	theta,m,b = rb.ajusteDeCurvas(clusters[1].get_old_points()) 
 	print theta,m,b
@@ -104,7 +105,7 @@ def basicProcess(imgOriginal):
 	cv2.destroyAllWindows()
 
 	return theta,clusters
-
+	'''
 # This funtion will recieve as a paramates a list with 3 objects from the class 'Cluster'.
 # The density of points inside each cluster will be counted and depending on it the next
 # movement will be decided. The best case will be to have the gratest number of clusters in the center.
@@ -118,7 +119,7 @@ def basicProcess(imgOriginal):
 ############### MAIN LOOP ######################
 ################################################
 def loop():
-	letter = raw_input('Letter: ')
+	letter = 'd'
 	while(letter != 'f'):
 
 		# Takes a picture
@@ -129,7 +130,10 @@ def loop():
 		# If the image is in good form, analyze it
 		if goodFrm:
 			angle,clusters = basicProcess(imgOriginal)
-			print "Angulo de rotacion : ", angle
+			#print "Angulo de rotacion : ", angle
+			cv2.imshow('img',imgOriginal)
+			cv2.waitKey(0)
+			cv2.destroyAllWindows()
 			
 		letter = raw_input('Letter: ')
 
@@ -137,10 +141,12 @@ def loop():
 
 def test():
 	img = loadImage(filename)
+	img = rb.clearImage(img)
 	print img.shape
-
+        cv2.imshow('img',img)
+        cv2.waitKey(0)
 	
-
 loop()
+
 cv2.destroyAllWindows()
 

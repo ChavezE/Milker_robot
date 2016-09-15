@@ -9,7 +9,7 @@ import LARC1 as rb
 
 filename = 'image5.jpg'
 binValue = 110	 # parameter for the threshold
-cap = cv2.VideoCapture(0)
+
 
 # loads image as imgOriginal
 # This will have to change to taking snap everytime needed
@@ -118,33 +118,62 @@ def basicProcess(imgOriginal):
 ################################################
 ############### MAIN LOOP ######################
 ################################################
+cap = cv2.VideoCapture(0)
 def loop():
 	letter = 'd'
 	while(letter != 'f'):
 
 		# Takes a picture
 		for i in range(4):
-			cap.grab()
-		goodFrm, imgOriginal = cap.read()
+		     cap.grab()
+		goodFrm, frame = cap.read()
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+		rows, cols = gray.shape[:2]
+
+		kernel_x = cv2.getGaussianKernel(cols,200)
+		kernel_y = cv2.getGaussianKernel(rows,200)
+		kernel = kernel_y * kernel_x.T
+		mask = 255 * kernel / np.linalg.norm(kernel)
+		output = np.copy(img)
+
+		for i in range(3):
+		    output[:,:,i] = output[:,:,i] * mask
+
+		#cv2.imshow('Original', img)
+		#cv2.imshow('Vignette', output)
+
+		################
+		# Shifting the focus
+
+		kernel_x = cv2.getGaussianKernel(int(1.5*cols),200)
+		kernel_y = cv2.getGaussianKernel(int(1.5*rows),200)
+		kernel = kernel_y * kernel_x.T
+		mask = 255 * kernel / np.linalg.norm(kernel)
+		mask = mask[int(0.5*rows):, int(0.5*cols):]
+		output = np.copy(img)
+
+		for i in range(3):
+		    output[:,:,i] = output[:,:,i] * mask
+
+		cv2.imshow('Input', img)
+		cv2.imshow('Vignette with shifted focus', output)
+
+
+		cv2.waitKey()
 		# If the image is in good form, analyze it
-		if goodFrm:
-			angle,clusters = basicProcess(imgOriginal)
-			#print "Angulo de rotacion : ", angle
-			cv2.imshow('img',imgOriginal)
-			cv2.waitKey(0)
-			cv2.destroyAllWindows()
+		# if goodFrm:
+		# 	angle,clusters = basicProcess(imgOriginal)
+		# 	#print "Angulo de rotacion : ", angle
+		# 	cv2.imshow('img',imgOriginal)
+		# 	cv2.waitKey(0)
+		# 	cv2.destroyAllWindows()
 			
 		letter = raw_input('Letter: ')
 
 
 
-def test():
-	img = loadImage(filename)
-	img = rb.clearImage(img)
-	print img.shape
-        cv2.imshow('img',img)
-        cv2.waitKey(0)
+
 	
 loop()
 

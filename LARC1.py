@@ -268,10 +268,12 @@ def findClusters(cowRectangles,iterations,coordClusters):
    
    return clusters
 
-# This function will analyze the image in order to determine if there is a cow.
-# It will return a boolean variable in order to say if the cow was found or not.
-def isThereACow(tImg):
-   foundCow = False
+def takePicture():
+   cap = cv2.VideoCapture(0)
+   for i in range(4):
+         cap.grab()
+   goodFrm, img = cap.read()
+   return goodFrm, img
 
 
 

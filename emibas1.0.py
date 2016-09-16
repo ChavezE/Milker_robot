@@ -139,77 +139,83 @@ def neighboors(cowSquares):
 	return neigh
 
 
-def loop():
-
+def main():
+	binValue = raw_input('Define threshold value: ')
 	while (1):
-		incom = ''
-		while incom != 'R':
-			ser.flush()
-			incom = ser.read(1)
+		
 
-		if incom == 'R':
-			_, imgOriginal = cap.read()
-			filteredImage = rb.clearImage(imgOriginal)
-			thresImage = rb.doThresHold(filteredImage,binValue)
-			cv2.imshow('T',thresImage)
-			contours = rb.findContours(thresImage)
-			cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
-			cowRectangles = rb.getGoodSquares(contours,imgOriginal)
-			# We have this order 
-			# [area,extent,w,h,x,y]
-			n = neighboors(cowRectangles)
-			# getting body here !!!! 
-			clusters = findClusters(3,n,100)
+		
 
-			# for i in range(len(clusters)):
-			# 	b = int ( random.uniform(0,255))
-			# 	g = int ( random.uniform(0,255))
-			# 	r = int ( random.uniform(0,255))
-			# 	list_1 = clusters[i].get_old_points()
-			# 	xc,yc = clusters[i].get_center()
-			# 	cv2.circle(imgOriginal,(xc,yc),15,(b,g,r),3)
-			# 	for j in range (len(list_1)):
-			# 		x = list_1[j][0]
-			# 		y = list_1[j][1]
-			# 		cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
+# MOST IMPORTANT LINE IN ALL THE CODE... 			
+main()
 
 
-			for cluster in clusters:
-				print "---------"
-				print cluster.get_old_points()
-			theta,m,b = rb.ajusteDeCurvas(clusters[0].get_old_points())
-			#theta,m,b = rb.ajusteDeCurvas(n,len(n))
-			cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
-			print "angulo ",theta
-			print "ordenada al origen", b
-			cv2.imshow('i',imgOriginal)
-			c = 0
-			while c != 27:
-				c = cv2.waitKey(50)
-				break
-			
-			cv2.destroyAllWindows()
+# Code that may be used in the futue...
+# for i in range(len(clusters)):
+# 	b = int ( random.uniform(0,255))
+# 	g = int ( random.uniform(0,255))
+# 	r = int ( random.uniform(0,255))
+# 	list_1 = clusters[i].get_old_points()
+# 	xc,yc = clusters[i].get_center()
+# 	cv2.circle(imgOriginal,(xc,yc),15,(b,g,r),3)
+# 	for j in range (len(list_1)):
+# 		x = list_1[j][0]
+# 		y = list_1[j][1]
+# 		cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
 
-			theta = abs(int(theta))
-			theta = str(theta)
-			ser.write(theta)
-			echo = ser.read(len(theta))
-			print "Este es el echo: ", echo
+"""
+TEST COMMUNICATION WITH THE ARDUNIO
+"""
+# This code was for testing communication 
+# with the Arduino Microcontroller
 
-			if echo == theta:
-				print 'jalando'
-			else:
-				print 'no jalo'
+# incom = ''
+# while incom != 'R':
+# 	ser.flush()
+# 	incom = ser.read(1)
 
-			
+# if incom == 'R':
+# 	for i in range(4):
+# 		cap.grab()
+# 	_, imgOriginal = cap.read()
+# 	filteredImage = rb.clearImage(imgOriginal)
+# 	thresImage = rb.doThresHold(filteredImage,binValue)
+# 	cv2.imshow('T',thresImage)
+# 	contours = rb.findContours(thresImage)
+# 	cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
+# 	cowRectangles = rb.getGoodSquares(contours,imgOriginal)
+# 	# We have this order 
+# 	# [area,extent,w,h,x,y]
+# 	n = neighboors(cowRectangles)
+# 	# getting body here !!!! 
+# 	clusters = findClusters(3,n,100)
 
 	
+
+
+# 	for cluster in clusters:
+# 		print "---------"
+# 		print cluster.get_old_points()
+# 	theta,m,b = rb.ajusteDeCurvas(clusters[0].get_old_points())
+# 	#theta,m,b = rb.ajusteDeCurvas(n,len(n))
+# 	cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
+# 	print "angulo ",theta
+# 	print "ordenada al origen", b
+# 	cv2.imshow('i',imgOriginal)
+# 	c = 0
+# 	while c != 27:
+# 		c = cv2.waitKey(50)
+# 		break
 	
+# 	cv2.destroyAllWindows()
 
+# 	theta = abs(int(theta))
+# 	theta = str(theta)
+# 	ser.write(theta)
+# 	echo = ser.read(len(theta))
+# 	print "Este es el echo: ", echo
 
-
-
-
-
-loop()
-
+# 	if echo == theta:
+# 		print 'jalando'
+# 	else:
+# 		print 'no jalo'

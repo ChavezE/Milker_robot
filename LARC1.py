@@ -1,3 +1,4 @@
+
 """
    This is version 1.0 of LARC 2016 Module of Mexican Team RoBorregos
    here there are stored most of functions used by the artificial vision
@@ -85,7 +86,7 @@ def clearImage(imgOriginal):
 
 def doThresHold(filteredImage,tVal):
 	_, thres1 = cv2.threshold(filteredImage,tVal,255,cv2.THRESH_BINARY_INV)
-	thres1 = cv2.erode(thres1,np.ones((7,7),np.uint8), iterations=2)
+	thres1 = cv2.erode(thres1,np.ones((3,3),np.uint8), iterations=5)
 	return thres1
 
 def centerOfContour(contour): # Returns the coordinates of the contour's center

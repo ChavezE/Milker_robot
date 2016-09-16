@@ -269,6 +269,27 @@ def findClusters(cowRectangles,iterations,coordClusters):
    
    return clusters
 
+# This function returnsa list of coords with all those
+# that have more than 2 neihbors in a specific radius
+def neighboors(cowSquares):
+   radius = 150
+   neigh = []
+   for i in range (len(cowSquares)):
+      xi = cowSquares[i][4]
+      yi = cowSquares[i][5]
+      count = 0
+      for j in range (len(cowSquares)):
+         if (i != j):
+            xj = cowSquares[j][4]
+            yj = cowSquares[j][5]
+            if ((abs(xi-xj) < radius) and (abs(yi-yj) < radius)):
+               count = count + 1
+      if (count > 2):
+         cv2.circle(imgOriginal,(xi,yi),10,(0,255,0),2)
+         neigh.append([xi,yi])
+
+   return neigh
+
 def takePicture():
    cap = cv2.VideoCapture(0)
    for i in range(4):

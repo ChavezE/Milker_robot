@@ -62,8 +62,7 @@ def basicProcess(imgOriginal):
 	# Good processing here, still have to make sure no cows are overlaping
 
 	n = neighboors(cowRectangles,2)
-	for nt in n:
-                print nt
+
 	coordClusters = []
 	coordClusters.append([600,180])
 	coordClusters.append([425,180])
@@ -118,64 +117,52 @@ def basicProcess(imgOriginal):
 ################################################
 ############### MAIN LOOP ######################
 ################################################
-cap = cv2.VideoCapture(0)
+
+def histEqualisationYUV(img):
+	img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+	img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
+	img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
+	return img_output
+
+
+
 def loop():
+	cap = cv2.VideoCapture(0)
+
+	if not cap.isOpened():
+		raise IOError("Cannot open webcam")
 	letter = 'd'
 	while(letter != 'f'):
 
 		# Takes a picture
 		for i in range(4):
-		     cap.grab()
+			cap.grab()
 		goodFrm, frame = cap.read()
-		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		# rows, cols = frame.shape[:2]
+		# gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-		rows, cols = gray.shape[:2]
-
-		kernel_x = cv2.getGaussianKernel(cols,200)
-		kernel_y = cv2.getGaussianKernel(rows,200)
-		kernel = kernel_y * kernel_x.T
-		mask = 255 * kernel / np.linalg.norm(kernel)
-		output = np.copy(img)
-
-		for i in range(3):
-		    output[:,:,i] = output[:,:,i] * mask
-
-		#cv2.imshow('Original', img)
-		#cv2.imshow('Vignette', output)
-
-		################
-		# Shifting the focus
-
-		kernel_x = cv2.getGaussianKernel(int(1.5*cols),200)
-		kernel_y = cv2.getGaussianKernel(int(1.5*rows),200)
-		kernel = kernel_y * kernel_x.T
-		mask = 255 * kernel / np.linalg.norm(kernel)
-		mask = mask[int(0.5*rows):, int(0.5*cols):]
-		output = np.copy(img)
-
-		for i in range(3):
-		    output[:,:,i] = output[:,:,i] * mask
-
-		cv2.imshow('Input', img)
-		cv2.imshow('Vignette with shifted focus', output)
-
-
-		cv2.waitKey()
 		# If the image is in good form, analyze it
-		# if goodFrm:
-		# 	angle,clusters = basicProcess(imgOriginal)
-		# 	#print "Angulo de rotacion : ", angle
-		# 	cv2.imshow('img',imgOriginal)
-		# 	cv2.waitKey(0)
-		# 	cv2.destroyAllWindows()
+		if goodFrm:
+			# angle,clusters = basicProcess(frame)
+			frame = histEqualisationYUV(frame)
+			cv2.imshow('f',frame)
+			frame = rb.clearImage(frame)
+			thresImage = rb.doThresHold(frame,60)
+			cv2.imshow('T',thresImage)
+			#print "Angulo de rotacion : ", angle
 			
+		cv2.waitKey()
+		cv2.destroyAllWindows()
+
+		# LAST STEP... Ask if the user wants to take another picture
 		letter = raw_input('Letter: ')
-
-
-
-
+	cap.release()
 	
+		
+
+		
+			
+
 loop()
 
-cv2.destroyAllWindows()
 

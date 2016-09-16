@@ -8,10 +8,10 @@
 // LCD: 0x27
 //
 // Motor definitions
-// M4: Left Front
-// M3: Right Front
-// M2: Right Back
-// M1: Left Back
+// MLF: Left Front
+// MRF: Right Front
+// MRB: Right Back
+// MLB: Left Back
 
 //--------------------- Libraries -------------------------//
 #include <Wire.h>
@@ -21,10 +21,11 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <SharpIR.h>
 
 //--------------------- Pins ------------------------------//
-const uint8_t sharpFL = 0;		// sharpFrontLeft
-const uint8_t sharpFR = 0;		// sharpFrontRight
+const uint8_t sharpFL = A10;	// sharpFrontLeft
+const uint8_t sharpFR = A9;		// sharpFrontRight
 const uint8_t sharpRT = A7;		// sharpRightTop
 const uint8_t sharpRB = A8;		// sharpRightBottom
 const uint8_t sharpBL = A11;	// sharpBackLeft
@@ -32,12 +33,15 @@ const uint8_t sharpBR = A12;	// sharpBackRight
 const uint8_t sharpLT = A14;	// sharpLeftTop
 const uint8_t sharpLB = A13;	// sharpLeftBottom
 
+const uint8_t encoderF = 18;	// encoderFront
+const uint8_t encoderB = 19;	// encoderBack
+
 //--------------------- Motors ----------------------------//
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
-Adafruit_DCMotor *M1 = AFMS.getMotor(1);
-Adafruit_DCMotor *M2 = AFMS.getMotor(2);
-Adafruit_DCMotor *M3 = AFMS.getMotor(3);
-Adafruit_DCMotor *M4 = AFMS.getMotor(4);
+Adafruit_DCMotor *MLB = AFMS.getMotor(1);
+Adafruit_DCMotor *MRB = AFMS.getMotor(2);
+Adafruit_DCMotor *MRF = AFMS.getMotor(3);
+Adafruit_DCMotor *MLF = AFMS.getMotor(4);
 
 //--------------------- LCD -------------------------------//
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -45,28 +49,66 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 //--------------------- IMU -------------------------------//
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
+//--------------------- Sharps -----------------------------//
+SharpIR distFL(sharpFL, 25, 93, 2016);
+SharpIR distFR(sharpFR, 25, 93, 2016);
+SharpIR distRT(sharpRT, 25, 93, 2016);
+SharpIR distRB(sharpRB, 25, 93, 2016);
+SharpIR distBL(sharpBL, 25, 93, 2016);
+SharpIR distBR(sharpBR, 25, 93, 2016);
+SharpIR distLT(sharpLT, 25, 93, 2016);
+SharpIR distLB(sharpLB, 25, 93, 2016);
+
 //--------------------- Constants -------------------------//
 const float precisionIMU = 2.0;
-const unsigned int analogWallDistance = 400;
+const unsigned int wallDistance = 15;
+const int stepsPerCm = 200;
 
 //--------------------- Global variables ------------------//
-unsigned long clk;
+volatile unsigned int stepsF = 0;	// stepsFront
+volatile unsigned int stepsB = 0;	// stepsBack
+
+unsigned long clk;	//used to measure time
 
 //--------------------- Control movements -----------------//
-void moveBackward()
+String moveForward(int distance)
 {
-  M1->run(BACKWARD);
-  M2->run(BACKWARD);
-  M3->run(BACKWARD);
-  M4->run(BACKWARD);
+  stepsF = 0;
+  while(stepsF < distance*stepsPerCm && distFR.distance() > wallDistance && distFL.distance() > wallDistance)
+  {
+  	MLB->run(FORWARD);
+	MRB->run(FORWARD);
+	MRF->run(FORWARD);
+	MLF->run(FORWARD);
+  }
+  stopMotors();
+  if(stepsF >= distance*stepsPerCm)
+  	return "0";
+  return "-1";
+}
+
+String moveBackward(int distance)
+{
+  stepsF = 0;
+  while(stepsF < distance*stepsPerCm && distBR.distance() > wallDistance && distBL.distance() > wallDistance)
+  {
+  	  MLB->run(BACKWARD);
+	  MRB->run(BACKWARD);
+	  MRF->run(BACKWARD);
+	  MLF->run(BACKWARD);
+  }
+  stopMotors();
+  if(stepsF >= distance*stepsPerCm)
+  	return "0";
+  return "-1";
 }
 
 void stopMotors()
 {
-  M1->run(RELEASE);
-  M2->run(RELEASE);
-  M3->run(RELEASE);
-  M4->run(RELEASE);
+  MLB->run(RELEASE);
+  MRB->run(RELEASE);
+  MRF->run(RELEASE);
+  MLF->run(RELEASE);
   delay(20);
 }
 
@@ -78,10 +120,10 @@ void turnRight(int angle)
   float ePos = oPos + angle > 360 ? oPos - 360 + angle : oPos + angle;
   float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
   float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
-  M1->run(FORWARD);
-  M2->run(BACKWARD);
-  M3->run(BACKWARD);
-  M4->run(FORWARD);
+  MLB->run(FORWARD);
+  MRB->run(BACKWARD);
+  MRF->run(BACKWARD);
+  MLF->run(FORWARD);
   while(!(oPos >= iLim && oPos <= oLim))
   {
     lcd.setCursor(4,0);
@@ -101,10 +143,10 @@ void turnLeft(int angle)
   float ePos = oPos - angle < 0 ? oPos + 360 - angle : oPos - angle;
   float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
   float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
-  M1->run(BACKWARD);
-  M2->run(FORWARD);
-  M3->run(FORWARD);
-  M4->run(BACKWARD);
+  MLB->run(BACKWARD);
+  MRB->run(FORWARD);
+  MRF->run(FORWARD);
+  MLF->run(BACKWARD);
   while(!(oPos >= iLim && oPos <= oLim))
   {
     lcd.setCursor(4,0);
@@ -137,24 +179,40 @@ void setup() {
   // init serial
   Serial.begin(9600);
 
+  // init encoders
+  pinMode(encoderF, INPUT_PULLUP);
+  pinMode(encoderB, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(encoderF), addFrontStep, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(encoderB), addBackStep, CHANGE);
+
   // init lcd
   lcd.begin();
   lcd.backlight();
   
   // init motors
   AFMS.begin();
-  M1->setSpeed(150);
-  M2->setSpeed(150);
-  M3->setSpeed(150);
-  M4->setSpeed(150);
-  M1->run(FORWARD);
-  M2->run(FORWARD);
-  M3->run(FORWARD);
-  M4->run(FORWARD);
-  M1->run(RELEASE);
-  M2->run(RELEASE);
-  M3->run(RELEASE);
-  M4->run(RELEASE);
+  MLB->setSpeed(100);
+  MRB->setSpeed(100);
+  MRF->setSpeed(100);
+  MLF->setSpeed(100);
+  MLB->run(FORWARD);
+  MRB->run(FORWARD);
+  MRF->run(FORWARD);
+  MLF->run(FORWARD);
+  MLB->run(RELEASE);
+  MRB->run(RELEASE);
+  MRF->run(RELEASE);
+  MLF->run(RELEASE);
+
+  // init Sharps
+  pinMode (sharpFL, INPUT);
+  pinMode (sharpFR, INPUT);
+  pinMode (sharpRT, INPUT);
+  pinMode (sharpRB, INPUT);
+  pinMode (sharpBL, INPUT);
+  pinMode (sharpBR, INPUT);
+  pinMode (sharpLT, INPUT);
+  pinMode (sharpLB, INPUT); 
 
   // init IMU
   if(!bno.begin())
@@ -174,6 +232,7 @@ void setup() {
   lcd.clear();
 
   // waiting for Raspberry to boot
+  /*
   while(Serial.available() <= 0)
   {
     lcd.setCursor(0,0);
@@ -184,38 +243,75 @@ void setup() {
   lcd.print("Rasp: OK");
   delay(500);
   lcd.clear();
+  */
 }
 
 //--------------------- Main program ----------------------//
 void loop() {
+  bool legLTDetected = false;
+  bool legLBDetected = false;
+  bool legRTDetected = false;
+  bool legRBDetected = false;
+  while(!(legLTDetected && legLBDetected && legRTDetected && legRBDetected) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
+      {
+        legLTDetected = distLT.distance() > wallDistance ? legLTDetected : true;
+        legLBDetected = distLB.distance() > wallDistance ? legLBDetected : true;
+        legRTDetected = distRT.distance() > wallDistance ? legRTDetected : true;
+        legRBDetected = distRB.distance() > wallDistance ? legRBDetected : true;
+        MLB->run(FORWARD);
+        MRB->run(FORWARD);
+        MRF->run(FORWARD);
+        MLF->run(FORWARD);
+        if(leg && distRT.distance() <= wallDistance)
+        {
+          MRB->setSpeed(0);
+          MRF->setSpeed(0);
+        }
+        else if(distLT.distance() <= wallDistance && distRT.distance() > wallDistance)
+        {
+          MLB->setSpeed(0);
+          MLF->setSpeed(0);
+        }
+        else if(distLT.distance() <= wallDistance && distRT.distance() <= wallDistance)
+        {
+          MLB->setSpeed(100);
+          MRB->setSpeed(100);
+          MRF->setSpeed(100);
+          MLF->setSpeed(100);
+        }
+      }
+      stopMotors();
+      delay(10000);
+  /*
   if(Serial.available() > 0)
   {
   	switch(Serial.readString().toInt())
   	{
   		// 1.- Getting ready in the empty terrines zone
-  		case : 1
-  			while(analogRead(sharpBR) < analogWallDistance)
-  				moveBackward();
-  			stopMotors();
-  			if(analogRead(sharpLT) < analogWallDistance)
+  		case 1:
+  			moveBackward(500);
+  			if(distLT.distance() > wallDistance)
   				Serial.print("-1");
   			else
   				Serial.print("0");
   		break;
 
   		// 2.- Find terrine
-  		case : 2
+  		case 2:
   		break;
 
   		// 3.- Grab terrine
-  		case : 3
+  		case 3:
   		break;
 
   		// 4.- Move in grid searching the cow
-  		case : 4
+  		case 4:
   			// Serial order: 
   			// #1 - move(0) or turn(1)
   			// #2 - cm or degrees
+  			// Status:
+  			// 0: OK
+  			// -1: Cannot move that distance in that direction
   			while(Serial.available() < 0);
 			if(Serial.readString().toInt())
 			{
@@ -225,77 +321,118 @@ void loop() {
 			    lcd.setCursor(12,0);
 			    lcd.print("0:");
 			    lcd.print(angle);
-			    if(angle > 0)
+			    if(angle > 0)		// + to the right and - to the left
 			      turnRight(angle);
 			    else
-			      turnLeft(angle);
+			      turnLeft(-angle);
 			    Serial.print("0");
 			}
 			else
 			{
 				while(Serial.available() < 0);
-				// TODO: Implement here
+				int distance = Serial.readString().toInt();
+				lcd.clear();
+			    lcd.setCursor(0,0);
+			    lcd.print("Moving ");
+			    lcd.print(distance);
+			    lcd.print(" cm");
+			    String status;
+			    if(distance > 0)	// + forward and - backwards
+			    	status = moveForward(distance);
+			   	else 
+			   		status = moveBackward(-distance);
+			   	Serial.print(status);
 			}
   		break;
 
   		// 5.- Detect cow with vision (null, raspberry work)
-  		case : 5
+  		case 5:
   		break;
 
-  		// 6.- Position in the cow lateral
-  		case : 6
+  		// 6.- Position in the cow lateral (null, use case 4)
+  		case 6:
   		break;
 
   		// 7.- Enter below cow
-  		case : 7
+  		case 7:
+			while((distLT.distance() > wallDistance || distLB.distance() > wallDistance || distRT.distance() > wallDistance || distRB.distance() > wallDistance) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
+			{
+				MLB->run(FORWARD);
+				MRB->run(FORWARD);
+				MRF->run(FORWARD);
+				MLF->run(FORWARD);
+				if(distLT.distance() > wallDistance && distRT.distance() <= wallDistance)
+				{
+					MRB->setSpeed(0);
+					MRF->setSpeed(0);
+				}
+				else if(distLT.distance() <= wallDistance && distRT.distance() > wallDistance)
+				{
+					MLB->setSpeed(0);
+					MLF->setSpeed(0);
+				}
+				else if(distLT.distance() <= wallDistance && distRT.distance() <= wallDistance)
+				{
+					MLB->setSpeed(100);
+					MRB->setSpeed(100);
+					MRF->setSpeed(100);
+					MLF->setSpeed(100);
+				}
+			}
+			stopMotors();
+			if(distFL.distance() <= wallDistance || distFR.distance() <= wallDistance)
+				Serial.print("-1");
+			Serial.print("0");
   		break;
 
   		// 8.- Milk cow
-  		case : 8
+  		case 8:
   		break;
 
   		// 9.- Exit cow
-  		case : 9
+  		case 9:
+
   		break;
 
-  		// 10.- Return to empty terrines zone
-  		case : 10
+  		// 10.- Return to empty terrines zone (null, use case 4)
+  		case 10:
   		break;
 
   		// 11.- Search door
-  		case : 11
+  		case 11:
+  		
   		break;
 
   		// 12.- Localize milk tank
-  		case : 12
+  		case 12:
   		break;
 
   		// 13.- Move towards milk tank
-  		case : 13
+  		case 13:
   		break;
 
   		// 14.- Getting ready to deposit milk
-  		case : 14
+  		case 14:
   		break;
 
   		// 15.- Poor milk in tank
-  		case : 15
+  		case 15:
   		break;
 
   		// 16.- Move towards exchange zone
-  		case : 16
+  		case 16:
   		break;
 
   		// 17.- Drop terrine
-  		case : 17
+  		case 17:
   		break;
 
   		// 18.- Search door (null, see case 11)
-  		case : 18
+  		case 18:
   		break;
 
   		// 19.- Go to empty terrines zone
-  		case : 19
+  		case 19:
   		break;
   		default:
   			// return 't' meaning no correct value received, resend.
@@ -329,4 +466,14 @@ void loop() {
     lcd.print("Timeout!");
   }
   */
+}
+
+void addFrontStep()
+{
+	stepsF++;
+}
+
+void addBackStep()
+{
+	stepsB++;
 }

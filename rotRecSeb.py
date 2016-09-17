@@ -153,24 +153,26 @@ def loop():
 	
 # Analyze a frame and tell whether there is enough information to analyze or not
 def isThereACow():	
+	
 	# Take the picture
 	for i in range(4):
 		cap.grab()
 	goodFrm, mainFrame = cap.read()
-	# If the frame isn't corrupted, then analyze it
+
+	# If the frame isn't corrupted, then analyze it.
 	if goodFrm:
 		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
 		thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
 		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
-		cowRectangles, mainFrame = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-		cowRectangles = rb.neighboors(cowRectangles,2,mainFrame) # Find squares that have at least to neighboors
+		cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+		cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
 
 		# Cluster the rectangles in order to obtain the center of the cow 
 		coordClusters = []	# List to sotre the centers' coordinates 
 		coordClusters.append([160,260])	# Left cluster's center
 		coordClusters.append([320,180])	# Center cluter's center
 		coordClusters.append([480,260])	# Right cluster's center
-		clusters = rb.findClusters(cowRectangles,5,coordClusters)	# Make 5 iterations to determine the clusters
+		clusters = rb.findClusters(cowNeighboors,5,coordClusters)	# Make 5 iterations to determine the clusters
 		mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
 		cv2.imshow('f',mainFrame)
 		cv2.waitKey(0)

@@ -284,7 +284,6 @@ def neighboors(cowSquares):
             if ((abs(xi-xj) < radius) and (abs(yi-yj) < radius)):
                count = count + 1
       if (count > 2):
-         cv2.circle(imgOriginal,(xi,yi),10,(0,255,0),2)
          neigh.append([xi,yi])
 
    return neigh

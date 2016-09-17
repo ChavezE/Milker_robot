@@ -30,27 +30,6 @@ def loadImage(capName):
 		IN LARC1 PERMANENTLY
 '''
 
-
-def neighboors(cowSquares, minNeig,imgOriginal):
-	radius = 150
-	neigh = []
-	for i in range (len(cowSquares)):
-		xi = cowSquares[i][4]
-		yi = cowSquares[i][5]
-		count = 0
-		for j in range (len(cowSquares)):
-			if (i != j):
-				xj = cowSquares[j][4]
-				yj = cowSquares[j][5]
-				if ((abs(xi-xj) < radius) and (abs(yi-yj) < radius)):
-					count = count + 1
-		if (count > minNeig):
-			cv2.circle(imgOriginal,(xi,yi),10,(0,255,0),2)
-			area = cowSquares[i][0]
-			neigh.append([xi,yi,area])
-
-	return neigh,imgOriginal
-
 def drawClusters(clusters,img):
 	for i in range(len(clusters)):
 		b = int ( random.uniform(50,255))
@@ -184,7 +163,7 @@ def isThereACow():
 		thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
 		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
 		cowRectangles, mainFrame = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-		cowRectangles = neighboors(cowRectangles,2,mainFrame) # Find squares that have at least to neighboors
+		cowRectangles = rb.neighboors(cowRectangles,2,mainFrame) # Find squares that have at least to neighboors
 
 		# Cluster the rectangles in order to obtain the center of the cow 
 		coordClusters = []	# List to sotre the centers' coordinates 

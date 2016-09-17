@@ -5,7 +5,7 @@
    squad. All rights reserved by Instituo Tecnologico de Monterrey.
 
    AUTHORS:    Emilio Chavez Madero
-            Sebastian Rivera Gonzalez
+               Sebastian Rivera Gonzalez
 
 """
 
@@ -189,7 +189,6 @@ def getBody(cowRectangles,imgOriginal,totLines,epsilon):
 
 	return bodyLines
 
-
 # This method will sort countours respect to Y or X coord of bounding Rectangle
 # Critieria defines whether X o Y is used DEFAULT IS y
 # This is always from lef to right of from top to bottom --> Reverse = False
@@ -290,12 +289,6 @@ def neighboors(cowSquares):
 
    return neigh
 
-def takePicture():
-   cap = cv2.VideoCapture(0)
-   for i in range(4):
-         cap.grab()
-   goodFrm, img = cap.read()
-   return goodFrm, img
 
 
 

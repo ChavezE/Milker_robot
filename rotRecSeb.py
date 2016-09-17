@@ -8,25 +8,30 @@ import LARC1 as rb
 # ---------------------------
 
 filename = 'image5.jpg'
-binValue = 110	 # parameter for the threshold
+binValue = 80	 # parameter for the threshold
+cap = cv2.VideoCapture(0)
 
+if not cap.isOpened():
+	raise IOError("Cannot open webcam")
 
+# When testing, setup the threshold value
+binValue = raw_input('Define threshold value: ')
+binValue = float(binValue)
 # loads image as imgOriginal
 # This will have to change to taking snap everytime needed
 # in order to do this we must initialice cv2.videoCapture in the future
 # and remove parameter filename
 def loadImage(capName):
-	
 	imgOriginal = cv2.imread(capName)
 	return imgOriginal
 
-imgOriginal = loadImage(filename)
+# imgOriginal = loadImage(filename)
 ''' 	IN THIS AREA WE TEST POSIBLE FUNCTIONS OR CLASSES TO BE INSERTED 
 		IN LARC1 PERMANENTLY
 '''
 
 
-def neighboors(cowSquares, minNeig):
+def neighboors(cowSquares, minNeig,imgOriginal):
 	radius = 150
 	neigh = []
 	for i in range (len(cowSquares)):
@@ -44,8 +49,21 @@ def neighboors(cowSquares, minNeig):
 			area = cowSquares[i][0]
 			neigh.append([xi,yi,area])
 
-	return neigh
+	return neigh,imgOriginal
 
+def drawClusters(clusters,img):
+	for i in range(len(clusters)):
+		b = int ( random.uniform(50,255))
+		g = int ( random.uniform(50,255))
+		r = int ( random.uniform(50,255))
+		list_1 = clusters[i].get_old_points()
+		x,y = clusters[i].get_center()
+		cv2.circle(img,(x,y),10,(b,g,r),4)
+		for j in range (len(list_1)):
+			x = list_1[j][0]
+			y = list_1[j][1]
+			cv2.circle(img,(x,y),5,(b,g,r),-1)
+	return img
 # this function should return at most 3 vaules fo the cow:
 # - Angle of rotation
 # - Aprox Distance
@@ -68,7 +86,7 @@ def basicProcess(imgOriginal):
 	coordClusters.append([425,180])
 	coordClusters.append([319,180])
 	coordClusters.append([213,180])
-        coordClusters.append([40,180])	
+	coordClusters.append([40,180])	
 	
 	clusters = rb.findClusters(n,1,coordClusters)
 	for i in range(len(clusters)):
@@ -82,8 +100,8 @@ def basicProcess(imgOriginal):
 			x = list_1[j][0]
 			y = list_1[j][1]
 			cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
-        return 0,0
-        '''
+
+	'''
 	# Interpretation of cow properties below #
 	theta,m,b = rb.ajusteDeCurvas(clusters[1].get_old_points()) 
 	print theta,m,b
@@ -92,7 +110,7 @@ def basicProcess(imgOriginal):
 	else:
 		font = cv2.FONT_HERSHEY_SIMPLEX
 		cv2.putText(imgOriginal,("angle: " + str(theta)),(300,50), font, 0.7,(0,255,0),1,cv2.LINE_AA)
-     
+
 	cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
 	# print "Angulo :", theta
 	# Center of image here
@@ -124,13 +142,8 @@ def histEqualisationYUV(img):
 	img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
 	return img_output
 
-
-
 def loop():
-	cap = cv2.VideoCapture(0)
-
-	if not cap.isOpened():
-		raise IOError("Cannot open webcam")
+	
 	letter = 'd'
 	while(letter != 'f'):
 
@@ -138,9 +151,10 @@ def loop():
 		for i in range(4):
 			cap.grab()
 		goodFrm, frame = cap.read()
+		cv2.imshow('f',frame)
 		# rows, cols = frame.shape[:2]
 		# gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+		"""
 		# If the image is in good form, analyze it
 		if goodFrm:
 			# angle,clusters = basicProcess(frame)
@@ -150,19 +164,39 @@ def loop():
 			thresImage = rb.doThresHold(frame,60)
 			cv2.imshow('T',thresImage)
 			#print "Angulo de rotacion : ", angle
-			
-		cv2.waitKey()
+		"""
+		cv2.waitKey(0)
 		cv2.destroyAllWindows()
 
 		# LAST STEP... Ask if the user wants to take another picture
 		letter = raw_input('Letter: ')
-	cap.release()
 	
-		
+	
+# Analyze a frame and tell whether there is enough information to analyze or not
+def isThereACow():	
+	# Take the picture
+	for i in range(4):
+		cap.grab()
+	goodFrm, mainFrame = cap.read()
+	# If the frame isn't corrupted, then analyze it
+	if goodFrm:
+		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+		thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+		cowRectangles, mainFrame = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+		cowRectangles = neighboors(cowRectangles,2,mainFrame) # Find squares that have at least to neighboors
 
-		
-			
+		# Cluster the rectangles in order to obtain the center of the cow 
+		coordClusters = []	# List to sotre the centers' coordinates 
+		coordClusters.append([160,260])	# Left cluster's center
+		coordClusters.append([320,180])	# Center cluter's center
+		coordClusters.append([480,260])	# Right cluster's center
+		clusters = rb.findClusters(cowRectangles,5,coordClusters)	# Make 5 iterations to determine the clusters
+		mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
+		cv2.imshow('f',mainFrame)
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
 
-loop()
-
+isThereACow()
+cap.release()
 

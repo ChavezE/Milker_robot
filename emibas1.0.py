@@ -1,3 +1,4 @@
+##-----------LIBRARIES-----------##
 import cv2
 import time
 import math
@@ -5,149 +6,111 @@ import numpy as np
 import LARC1 as rb
 import random
 import serial
+##-------------------------------##
 
 
-
-filename = 'image11.jpg'
+##-----------SETUP-----------##
 binValue = 100  # parameter for the threshold
 cap = cv2.VideoCapture(0)
-ser = serial.Serial('/dev/ttyACM0',9600, timeout = 3)
-# CLUSTERING CLASS
+# Check that the connection with the camera is open
+if not cap.isOpened():
+	raise IOError("Cannot open webcam")
+# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 3)
+
+# When testing, setup the threshold value
+binValue = raw_input('Define threshold value: ')
+##---------------------------##
 
 
-class Cluster:
-	"""Clustering mothfkc points"""
-	# atributes
-	center = []
-	new_points = []
-	old_points = []
-	# methods
-	def __init__(self, init_center):
-		self.center = init_center
-		self.new_points = []
-		self.old_points = []
-	def calculate_center(self):
-		x_sum = 0
-		y_sum = 0
-		for i in range (len(self.new_points)):
-			x_sum = x_sum + self.new_points[i][0]
-			y_sum = y_sum + self.new_points[i][1]
-		if(len(self.new_points) > 0):
-			x_center = int(x_sum/len(self.new_points))
-			y_center = int(y_sum/len(self.new_points))
-			self.center = (x_center,y_center)
-	def add_point(self,new_p):
-		self.new_points.append(new_p)
-		""" 
-		making this not visible
-
-		"""
-	def set_center(self,point):
-		self. center = point
-		""" 
-		making this not visible
-
-		"""
-	#def set_points(self):
-	def distance(self,p):
-		x = p[0]
-		y = p[1]
-		xDif = abs(x - self.center[0])
-		yDif = abs(y - self.center[1])
-		return math.sqrt((xDif*xDif) + (yDif*yDif))
-		""" 
-		making this not visible
-
-		"""
-	def update_points(self):
-		self.old_points = list(self.new_points)
-		self.new_points = []
-	def get_center(self):
-		return self.center
-	def get_new_points(self):
-		return list(self.new_points)
-	def get_old_points(self):
-		return list(self.old_points)
-
-
-# This function is to implement the clustering algorithm 
-# PARAMETERS: number of clusters to search for, list of coordinates of the cow
-# and number of iterations before returning the final clusters
-def findClusters(num_clusters, cowRectangles,iterations):
-   # First, the list clusters is initialized with n number of Clusters
-	clusters = []
-	for iA in range(num_clusters):	
-		cluster = Cluster([0,0])
-		clusters.append(cluster)
-	if num_clusters == 3:
-		clusters[0].set_center([320,150])
-		clusters[1].set_center([0,480])
-		clusters[2].set_center([640,480])
-	elif num_clusters == 4:
-		clusters[0].set_center([640,0])
-		clusters[1].set_center([0,480])
-		clusters[2].set_center([640,480])
-		clusters[3].set_center([0,0])
-	for cluster in clusters:
-		print cluster.get_center()
-
-	for dummy_iterator in range(iterations):
-		for rect in cowRectangles:
-			dist = 100000000
-			index = 0
-			for i in range(len(clusters)):
-				if(clusters[i].distance(rect) < dist):
-					dist = clusters[i].distance(rect)
-					index = i
-
-			clusters[index].add_point(rect)
-		for cluster in clusters:
-			cluster.calculate_center()
-			cluster.update_points()
-
-	return clusters
-
-# loads image as imgOriginal
-# This will have to change to taking snap everytime needed
-# in order to do this we must initialice cv2.videoCapture in the future
-# and remove parameter filename
-def loadImage(capName):
-	
-	imgOriginal = cv2.imread(capName)
-	imgOriginal = cv2.resize(imgOriginal, (720 ,480))
-	return imgOriginal
-
-imgOriginal = loadImage(filename)
-
-def neighboors(cowSquares):
-	radius = 150
-	neigh = []
-	for i in range (len(cowSquares)):
-		xi = cowSquares[i][4]
-		yi = cowSquares[i][5]
-		count = 0
-		for j in range (len(cowSquares)):
-			if (i != j):
-				xj = cowSquares[j][4]
-				yj = cowSquares[j][5]
-				if ((abs(xi-xj) < radius) and (abs(yi-yj) < radius)):
-					count = count + 1
-		if (count > 2):
-			cv2.circle(imgOriginal,(xi,yi),10,(0,255,0),2)
-			neigh.append([xi,yi])
-
-	return neigh
-
+##-----------FUNCTIONS-----------##
+def takePicture():
+   for i in range(4):
+      cap.grab()
+   goodFrm, img = cap.read()
+   return goodFrm, img
 
 def main():
-	binValue = raw_input('Define threshold value: ')
+	
 	while (1):
-		
+		# checkArduinoIsAlive()	# Send something to Arduino and recieve it back
+		# confirmTerrineZone()	# Check out that the robot is ready to search for the terrine
+		# findTerrine()
+		# grabTerrine()
+		# goodFrm, imgOriginal = rb.takePicture()
+		# analyzeEnvironment()	# Search for the motherfucker cow
+		# positionInFrontCowLateral()
+		isThereACow()
 
-		
 
-# MOST IMPORTANT LINE IN ALL THE CODE... 			
+# This function is for the 1st case of the Arduino. The position of the terrines 
+# should detect a wall with the left and back distance sensors.
+def confirmTerrineZone():
+	arduino.write('1')	# Execute the 1st state of the arduino	
+
+	# Now we need to wait for an acknowledgement from the arduino
+	# 0 - OK, -1 - Not OK
+	incom = ' '
+	initTime = time.time()
+	counTimeOut = time.time() - initTime
+	while incom != '0' and incom != '-1' and counTimeOut < 15:
+		incom = arduino.read(1)
+		# Count the seconds the loop has runned
+		counTimeOut = time.time() - initTime	
+
+	# Check incom and counTimeOur in order to determine success
+	# if counTimeOut < 15 and incom == '0':
+		# Proceed to next function
+	# else:
+		# Determine a routine to handle the error
+
+def findTerrine():
+	arduino.write('2')
+
+def grabTerrine():
+	arduino.write('3')
+
+# This function will make the robot walk over the border of the corral zone. The terrine must be grabbed 
+# before this function is called
+def analyzeEnvironment():
+	orientation = 'W'	# The first orientation of the robot after grabbing the terrine
+
+# Analyze a frame and tell whether there is enough information to analyze or not
+def isThereACow():	
+	# Take the picture
+	goodFrm, mainFrame = takePicture()
+	
+	# If the frame isn't corrupted, then analyze it
+	if goodFrm:
+		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+		thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+		cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+		cowRectangles = neighboors(cowRectangles,2) # Find squares that have at least to neighboors
+
+		# Cluster the rectangles in order to obtain the center of the cow 
+		coordClusters = []	# List to sotre the centers' coordinates 
+		coordClusters.append([160,260])	# Left cluster's center
+		coordClusters.append([320,180])	# Center cluter's center
+		coordClusters.append([480,260])	# Right cluster's center
+		clusters = rb.findClusters(cowRectangles,5,coordClusters)	# Make 5 iterations to determine the clusters
+		mainFrame = rb.drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
+		cv2.imshow('f',mainFrame)
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
+
+##-------------------------------##
+
+##-----------MAIN FUNCTIONS-----------##	
 main()
+cap.release()
+
+
+
+
+
+
+
+
 
 
 # Code that may be used in the futue...
@@ -171,8 +134,8 @@ TEST COMMUNICATION WITH THE ARDUNIO
 
 # incom = ''
 # while incom != 'R':
-# 	ser.flush()
-# 	incom = ser.read(1)
+# 	arduino.flush()
+# 	incom = arduino.read(1)
 
 # if incom == 'R':
 # 	for i in range(4):
@@ -211,8 +174,8 @@ TEST COMMUNICATION WITH THE ARDUNIO
 
 # 	theta = abs(int(theta))
 # 	theta = str(theta)
-# 	ser.write(theta)
-# 	echo = ser.read(len(theta))
+# 	arduino.write(theta)
+# 	echo = arduino.read(len(theta))
 # 	print "Este es el echo: ", echo
 
 # 	if echo == theta:

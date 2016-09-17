@@ -78,7 +78,7 @@ class Cluster:
 # Does some guassian filtering to remove noise and converts image to gray scale :)
 def clearImage(imgOriginal):
 
-   imgOriginal[480*0.75:480,0:640] = [255,255,255]
+   imgOriginal[480*0.65:480,0:640] = [255,255,255]
    imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
    imGray = cv2.GaussianBlur(imGray, (3,3), 2)
 

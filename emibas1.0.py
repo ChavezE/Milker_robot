@@ -41,7 +41,6 @@ def main():
 		# positionInFrontCowLateral()
 		isThereACow()
 
-
 # This function is for the 1st case of the Arduino. The position of the terrines 
 # should detect a wall with the left and back distance sensors.
 def confirmTerrineZone():
@@ -76,27 +75,80 @@ def analyzeEnvironment():
 
 # Analyze a frame and tell whether there is enough information to analyze or not
 def isThereACow():	
-	# Take the picture
-	goodFrm, mainFrame = takePicture()
-	
-	# If the frame isn't corrupted, then analyze it
-	if goodFrm:
-		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
-		thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
-		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
-		cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-		cowRectangles = neighboors(cowRectangles,2) # Find squares that have at least to neighboors
+	letter = 'd'
+	while(letter != 'f'):
+		# Take the picture
+		goodFrm, mainFrame = takePicture()
 
-		# Cluster the rectangles in order to obtain the center of the cow 
-		coordClusters = []	# List to sotre the centers' coordinates 
-		coordClusters.append([160,260])	# Left cluster's center
-		coordClusters.append([320,180])	# Center cluter's center
-		coordClusters.append([480,260])	# Right cluster's center
-		clusters = rb.findClusters(cowRectangles,5,coordClusters)	# Make 5 iterations to determine the clusters
-		mainFrame = rb.drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
-		cv2.imshow('f',mainFrame)
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
+		# If the frame isn't corrupted, then analyze it.
+		if goodFrm:
+			filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+			cv2.imshow('t',thresFrame)
+			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+			cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
+			print "Len CowNeighs: ",len(cowNeighboors)
+			# If there are enough data, run the clustering algorithm
+			if len(cowNeighboors) > 8:
+
+				# Cluster the rectangles in order to obtain the center of the cow 
+				coordClusters = []	# List to sotre the centers' coordinates 
+				coordClusters.append([160,260])	# Left cluster's center
+				coordClusters.append([320,180])	# Center cluter's center
+				coordClusters.append([480,260])	# Right cluster's center
+				clusters = rb.findClusters(cowNeighboors,5,coordClusters)	# Make 5 iterations to determine the clusters
+				mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
+
+				# Now its time to analyze the clusters
+				if clustersNotEmpty(clusters):	# The 3 clusters must have more than 1 element
+					print "Cow is close to the center of the camera"
+
+				elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
+					print "Rob must turn left in order to enter below the cow"
+
+				elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
+					print "Rob must turn right in order to enter below the cow"
+			else:
+				print "No cow found"
+			cv2.imshow('f',mainFrame)
+			cv2.waitKey(0)
+			cv2.destroyAllWindows()
+		letter = raw_input('Letter: ')
+
+def drawClusters(clusters,img):
+	for i in range(len(clusters)):
+		b = int ( random.uniform(50,255))
+		g = int ( random.uniform(50,255))
+		r = int ( random.uniform(50,255))
+		list_1 = clusters[i].get_old_points()
+		x,y = clusters[i].get_center()
+		cv2.circle(img,(x,y),10,(b,g,r),4)
+		for j in range (len(list_1)):
+			x = list_1[j][0]
+			y = list_1[j][1]
+			cv2.circle(img,(x,y),5,(b,g,r),-1)
+	return img
+
+def clustersNotEmpty(clusters):
+	for cluster in clusters:
+		if len(cluster.get_old_points()) <= 1:
+			return False
+	return True	
+
+def drawClusters(clusters,img):
+	for i in range(len(clusters)):
+		b = int ( random.uniform(50,255))
+		g = int ( random.uniform(50,255))
+		r = int ( random.uniform(50,255))
+		list_1 = clusters[i].get_old_points()
+		x,y = clusters[i].get_center()
+		cv2.circle(img,(x,y),10,(b,g,r),4)
+		for j in range (len(list_1)):
+			x = list_1[j][0]
+			y = list_1[j][1]
+			cv2.circle(img,(x,y),5,(b,g,r),-1)
+	return img
 
 ##-------------------------------##
 

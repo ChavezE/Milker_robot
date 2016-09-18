@@ -163,6 +163,7 @@ def clustersNotEmpty(clusters):
 	return True	
 
 # Analyze a frame and tell whether there is enough information to analyze or not
+# '0' - no cow, '1' - cow
 def isThereACow():	
 	letter = 'd'
 	while(letter != 'f'):
@@ -195,11 +196,15 @@ def isThereACow():
 
 				elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
 					print "Rob must turn left in order to enter below the cow"
+					# arduino.write('1')
+					# arduino.write('-20')
 
 				elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
 					print "Rob must turn right in order to enter below the cow"
+					# arduino.write('1')
+					# arduino.write('20')
 			else:
-				print "No cow found"
+				print "No cow found, go to next square"
 			cv2.imshow('f',mainFrame)
 			cv2.waitKey(0)
 			cv2.destroyAllWindows()

@@ -8,17 +8,20 @@ import random
 import serial
 ##-------------------------------##
 
+##-----------GLOBAL VARIABLES-----------##
+binValue = 85  # parameter for the threshold
+headingWall = "N"	# GLOBAL DIRECTION VARIABLE
+mainFrame = cv2.imread('image5.jpg')	# Initialize global variable for image
+##--------------------------------------##
 
 ##-----------SETUP-----------##
-binValue = 100  # parameter for the threshold
 cap = cv2.VideoCapture(0)
 # Check that the connection with the camera is open
 if not cap.isOpened():
 	raise IOError("Cannot open webcam")
-# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 3)
-
+arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 3)
 # When testing, setup the threshold value
-binValue = raw_input('Define threshold value: ')
+# binValue = raw_input('Define threshold value: ')
 ##---------------------------##
 
 
@@ -27,23 +30,30 @@ def takePicture():
    for i in range(4):
       cap.grab()
    goodFrm, img = cap.read()
-   return goodFrm, img
-
+   mainFrame = img 	# Update global image variable
+   return goodFrm
 
 # This function is for the 1st case of the Arduino. The position of the terrines 
 # should detect a wall with the left and back distance sensors.
 def confirmTerrineZone():
 	arduino.write('1')	# Execute the 1st state of the arduino	
+	while (arduino.inWaiting() < 0):
+		pass
+
+	if (arduino.read(1) == '0'):
+		return True
+	else:
+		return False	
 
 	# Now we need to wait for an acknowledgement from the arduino
 	# 0 - OK, -1 - Not OK
-	incom = ' '
-	initTime = time.time()
-	counTimeOut = time.time() - initTime
-	while incom != '0' and incom != '-1' and counTimeOut < 15:
-		incom = arduino.read(1)
+	# incom = ' '
+	# initTime = time.time()
+	# counTimeOut = time.time() - initTime
+	# while incom != '0' and incom != '-1' and counTimeOut < 15:
+		# incom = arduino.read(1)
 		# Count the seconds the loop has runned
-		counTimeOut = time.time() - initTime	
+		# counTimeOut = time.time() - initTime	
 
 	# Check incom and counTimeOur in order to determine success
 	# if counTimeOut < 15 and incom == '0':
@@ -59,46 +69,48 @@ def grabTerrine():
 
 # Analyze a frame and tell whether there is enough information to analyze or not
 def isThereACow():	
-	letter = 'd'
-	while(letter != 'f'):
-		# Take the picture
-		goodFrm, mainFrame = takePicture()
+	# Take the picture
+	goodFrm = takePicture()
 
-		# If the frame isn't corrupted, then analyze it.
-		if goodFrm:
-			filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
-			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
-			cv2.imshow('t',thresFrame)
-			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
-			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-			cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
-			print "Len CowNeighs: ",len(cowNeighboors)
-			# If there are enough data, run the clustering algorithm
-			if len(cowNeighboors) > 8:
+	# If the frame isn't corrupted, then analyze it.
+	if goodFrm:
+		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+		thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+		# cv2.imshow('t',thresFrame)
+		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+		cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+		cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
+		# print "Len CowNeighs: ", len(cowNeighboors)
 
-				# Cluster the rectangles in order to obtain the center of the cow 
-				coordClusters = []	# List to sotre the centers' coordinates 
-				coordClusters.append([160,260])	# Left cluster's center
-				coordClusters.append([320,180])	# Center cluter's center
-				coordClusters.append([480,260])	# Right cluster's center
-				clusters = rb.findClusters(cowNeighboors,5,coordClusters)	# Make 5 iterations to determine the clusters
-				mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
 
-				# Now its time to analyze the clusters
-				if clustersNotEmpty(clusters):	# The 3 clusters must have more than 1 element
-					print "Cow is close to the center of the camera"
+		# If there are enough data, run the clustering algorithm
+		if len(cowNeighboors) > 8:
+			# Cluster the rectangles in order to obtain the center of the cow 
+			coordClusters = []	# List to sotre the centers' coordinates 
+			coordClusters.append([160,260])	# Left cluster's center
+			coordClusters.append([320,180])	# Center cluter's center
+			coordClusters.append([480,260])	# Right cluster's center
+			clusters = rb.findClusters(cowNeighboors,5,coordClusters)	# Make 5 iterations to determine the clusters
+			# mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
 
-				elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
-					print "Rob must turn left in order to enter below the cow"
-
-				elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
-					print "Rob must turn right in order to enter below the cow"
+			# Now its time to analyze the clusters
+			if clustersNotEmpty(clusters):	# The 3 clusters must have more than 1 element
+				# print "Cow is close to the center of the camera"
+				return True
+			# elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
+			# 	print "Rob must turn left in order to enter below the cow"
+			# elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
+			# 	print "Rob must turn right in order to enter below the cow"
 			else:
-				print "No cow found"
-			cv2.imshow('f',mainFrame)
-			cv2.waitKey(0)
-			cv2.destroyAllWindows()
-		letter = raw_input('Letter: ')
+				# print "No cow found"				
+				return False	
+		else:
+			# print "No cow found"
+			return False
+		# Show main frame 
+		# cv2.imshow('f',mainFrame)
+		# cv2.waitKey(0)
+		# cv2.destroyAllWindows()
 
 def drawClusters(clusters,img):
 	for i in range(len(clusters)):
@@ -141,7 +153,9 @@ def checkForArduino():
 	while (arduino.inWaiting() < 0):
 		pass
 	if (arduino.read(1) == 'b') # arduino is alive and ready
-	return True;
+		return True
+	else:
+		return False
 
 def moveBot(cm):
 	if cm == "forward":
@@ -180,7 +194,7 @@ def updateDirection(lasDir):
 		return "N"
 
 
-# explore the arena to find the desired misterious liquid (milk)
+# Explore the arena to find the desired misterious liquid (milk)
 # The coordenates of the arena will be taken this way:
 # This approach starts after picking up the terrine
 '''
@@ -198,15 +212,14 @@ NORTH 	|			  |	SOUTH
 
    			 WEST
 '''
-# GLOBAL DIRECTION VARIABLE
-headingWall = "N"
+
 def analizeEnviroment():
 	checkCorner = False
 	cowFound = False
 	while 1:
 		if checkCorner:
 			turnBot("45")
-			cowFound = takePicture()
+			cowFound = isThereACow()
 			if cowFound:
 				break
 
@@ -215,12 +228,12 @@ def analizeEnviroment():
 		else:
 			# face center of arena and look for cow
 			turnBot("right")
-			cowFound =  takePicture() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
+			cowFound =  isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
 			if cowFound:
 				break
 			turnBot("left") 
 
-		cowFound = takePicture() # to see if can keep moving on that direction
+		cowFound = isThereACow() # to see if can keep moving on that direction
 		if cowFound:
 			break
 
@@ -236,8 +249,6 @@ def analizeEnviroment():
 			turnBot("right")
 			headingWall = updateDirection(headingWall) # update global 
 
-
-
 # After we milked cow, it's time to go to the gate
 def goAlamus():
 
@@ -249,36 +260,42 @@ def goAlamus():
 		arduino.write("90")
 	else headingWall == "W":
 		arduino.write("180")
+	while(arduino.inWaiting()<0):
+		pass
+	res = arduino.read(1)
+	if res == "0":
+		arduino.write("11")
+	else:
+	# Something went wrong
+		pass
 
-
-	
-
-
+def milk():
+	arduino.write("7")
+	while (arduino.inWaiting):
+		pass
+	if(arduino.read(1) == "1"):
+		# It entered below the cow
+		return True
+	else:
+		# Something went wrong
+		return False
 ##-------------------------------##
 
 ##-----------MAIN FUNCTIONS-----------##
 def main():
 	
 	while (1):
-		# checkForArduino()	# Send something to Arduino and recieve it back
-		# confirmTerrineZone()	# Check out that the robot is ready to search for the terrine
-		# findTerrine()
-		# grabTerrine()
-		# analizeEnviroment()	# Search for the motherfucker cow
-		# positionInFrontCowLateral()
-		# milk()
-		# goAlamus()
+		if(checkForArduino()):	# Send something to Arduino and recieve it back
+			if(confirmTerrineZone()):	# Check out that the robot is ready to search for the terrine
+				# findTerrine()
+				# grabTerrine()
+				analizeEnviroment()	# Search for the motherfucker cow
+				# positionInFrontCowLateral()
+				if(milk()):
+					goAlamus()
 
 main()
 cap.release()
-
-
-
-
-
-
-
-
 
 
 # Code that may be used in the futue...

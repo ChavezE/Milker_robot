@@ -275,7 +275,7 @@ void setup() {
     lcd.setCursor(0,0);
     lcd.print("Booting Rasp...");
   }
-  Serial.read();
+  Serial.print(Serial.read());
   lcd.clear();
   lcd.print("Rasp: OK");
   delay(500);

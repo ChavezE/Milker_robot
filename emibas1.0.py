@@ -201,7 +201,7 @@ NORTH 	|			  |	SOUTH
 # GLOBAL DIRECTION VARIABLE
 headingWall = "N"
 def analizeEnviroment():
-checkCorner = False
+	checkCorner = False
 	while 1:
 		if checkCorner:
 			turnBot("45")

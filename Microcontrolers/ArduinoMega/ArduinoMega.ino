@@ -61,8 +61,8 @@ SharpIR distLB(sharpLB, 25, 93, 2016);
 
 //--------------------- Constants -------------------------//
 const float precisionIMU = 2.0;
-const unsigned int wallDistance = 15;
-const int stepsPerCm = 200;
+const unsigned int wallDistance = 8;
+const int stepsPerCm = 42;
 
 //--------------------- Global variables ------------------//
 volatile unsigned int stepsF = 0;	// stepsFront
@@ -77,13 +77,15 @@ String moveForward(int distance)
   while(stepsF < distance*stepsPerCm && distFR.distance() > wallDistance && distFL.distance() > wallDistance)
   {
   	MLB->run(FORWARD);
-	MRB->run(FORWARD);
-	MRF->run(FORWARD);
-	MLF->run(FORWARD);
+		MRB->run(FORWARD);
+		MRF->run(FORWARD);
+		MLF->run(FORWARD);
   }
   stopMotors();
   if(stepsF >= distance*stepsPerCm)
   	return "0";
+  if(distFR.distance() <= wallDistance + 3 && distFL.distance() <= wallDistance + 3)
+  	return "1";
   return "-1";
 }
 
@@ -92,7 +94,7 @@ String moveBackward(int distance)
   stepsF = 0;
   while(stepsF < distance*stepsPerCm && distBR.distance() > wallDistance && distBL.distance() > wallDistance)
   {
-  	  MLB->run(BACKWARD);
+  	MLB->run(BACKWARD);
 	  MRB->run(BACKWARD);
 	  MRF->run(BACKWARD);
 	  MLF->run(BACKWARD);
@@ -100,15 +102,17 @@ String moveBackward(int distance)
   stopMotors();
   if(stepsF >= distance*stepsPerCm)
   	return "0";
+  if(distBR.distance() <= wallDistance + 3 && distBL.distance() <= wallDistance + 3)
+  	return "1";
   return "-1";
 }
 
 void stopMotors()
 {
-  MLB->run(RELEASE);
-  MRB->run(RELEASE);
-  MRF->run(RELEASE);
-  MLF->run(RELEASE);
+  MLB->run(BRAKE);
+  MRB->run(BRAKE);
+  MRF->run(BRAKE);
+  MLF->run(BRAKE);
   delay(20);
 }
 
@@ -124,14 +128,24 @@ void turnRight(int angle)
   MRB->run(BACKWARD);
   MRF->run(BACKWARD);
   MLF->run(FORWARD);
-  while(!(oPos >= iLim && oPos <= oLim))
-  {
-    lcd.setCursor(4,0);
-    lcd.print("      ");
-    oPos = getOrientation();
-    lcd.setCursor(4,0);
-    lcd.print(oPos);
-  }
+  if(oLim > iLim)
+    while(!(oPos >= iLim && oPos <= oLim))
+    {
+      lcd.setCursor(4,0);
+      lcd.print("      ");
+      oPos = getOrientation();
+      lcd.setCursor(4,0);
+      lcd.print(oPos);
+    }
+  else
+    while(!(oPos >= iLim || oPos <= oLim))
+    {
+      lcd.setCursor(4,0);
+      lcd.print("      ");
+      oPos = getOrientation();
+      lcd.setCursor(4,0);
+      lcd.print(oPos);
+    }
   stopMotors();
 }
 
@@ -147,15 +161,38 @@ void turnLeft(int angle)
   MRB->run(FORWARD);
   MRF->run(FORWARD);
   MLF->run(BACKWARD);
-  while(!(oPos >= iLim && oPos <= oLim))
-  {
-    lcd.setCursor(4,0);
-    lcd.print("      ");
-    oPos = getOrientation();
-    lcd.setCursor(4,0);
-    lcd.print(oPos);
-  }
+  if(oLim > iLim)
+    while(!(oPos >= iLim && oPos <= oLim))
+    {
+      lcd.setCursor(4,0);
+      lcd.print("      ");
+      oPos = getOrientation();
+      lcd.setCursor(4,0);
+      lcd.print(oPos);
+    }
+  else
+    while(!(oPos >= iLim || oPos <= oLim))
+    {
+      lcd.setCursor(4,0);
+      lcd.print("      ");
+      oPos = getOrientation();
+      lcd.setCursor(4,0);
+      lcd.print(oPos);
+    }
   stopMotors();
+}
+
+void turnTo(int angle)
+{
+		int angleNeeded = angle - getOrientation();
+		if(angleNeeded > 180)
+			turnLeft(360-angle+getOrientation());
+		else if(angleNeeded > 0)
+			turnRight(angleNeeded);
+		else if(angleNeeded > -180)
+			turnLeft(-angleNeeded);
+		else
+			turnRight(360-getOrientation()+angle);
 }
 
 //--------------------- IMU utilities ---------------------//
@@ -191,10 +228,10 @@ void setup() {
   
   // init motors
   AFMS.begin();
-  MLB->setSpeed(100);
-  MRB->setSpeed(100);
-  MRF->setSpeed(100);
-  MLF->setSpeed(100);
+  MLB->setSpeed(70);
+  MRB->setSpeed(70);
+  MRF->setSpeed(70);
+  MLF->setSpeed(70);
   MLB->run(FORWARD);
   MRB->run(FORWARD);
   MRF->run(FORWARD);
@@ -248,41 +285,6 @@ void setup() {
 
 //--------------------- Main program ----------------------//
 void loop() {
-  bool legLTDetected = false;
-  bool legLBDetected = false;
-  bool legRTDetected = false;
-  bool legRBDetected = false;
-  while(!(legLTDetected && legLBDetected && legRTDetected && legRBDetected) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
-      {
-        legLTDetected = distLT.distance() > wallDistance ? legLTDetected : true;
-        legLBDetected = distLB.distance() > wallDistance ? legLBDetected : true;
-        legRTDetected = distRT.distance() > wallDistance ? legRTDetected : true;
-        legRBDetected = distRB.distance() > wallDistance ? legRBDetected : true;
-        MLB->run(FORWARD);
-        MRB->run(FORWARD);
-        MRF->run(FORWARD);
-        MLF->run(FORWARD);
-        if(leg && distRT.distance() <= wallDistance)
-        {
-          MRB->setSpeed(0);
-          MRF->setSpeed(0);
-        }
-        else if(distLT.distance() <= wallDistance && distRT.distance() > wallDistance)
-        {
-          MLB->setSpeed(0);
-          MLF->setSpeed(0);
-        }
-        else if(distLT.distance() <= wallDistance && distRT.distance() <= wallDistance)
-        {
-          MLB->setSpeed(100);
-          MRB->setSpeed(100);
-          MRF->setSpeed(100);
-          MLF->setSpeed(100);
-        }
-      }
-      stopMotors();
-      delay(10000);
-  /*
   if(Serial.available() > 0)
   {
   	switch(Serial.readString().toInt())
@@ -313,10 +315,10 @@ void loop() {
   			// 0: OK
   			// -1: Cannot move that distance in that direction
   			while(Serial.available() < 0);
-			if(Serial.readString().toInt())
-			{
-				while(Serial.available() < 0);
-				int angle = Serial.readString().toInt();
+				if(Serial.readString().toInt())
+				{
+					while(Serial.available() < 0);
+					int angle = Serial.readString().toInt();
 			    lcd.clear();
 			    lcd.setCursor(12,0);
 			    lcd.print("0:");
@@ -326,12 +328,12 @@ void loop() {
 			    else
 			      turnLeft(-angle);
 			    Serial.print("0");
-			}
-			else
-			{
-				while(Serial.available() < 0);
-				int distance = Serial.readString().toInt();
-				lcd.clear();
+				}
+				else
+				{
+					while(Serial.available() < 0);
+					int distance = Serial.readString().toInt();
+					lcd.clear();
 			    lcd.setCursor(0,0);
 			    lcd.print("Moving ");
 			    lcd.print(distance);
@@ -342,7 +344,7 @@ void loop() {
 			   	else 
 			   		status = moveBackward(-distance);
 			   	Serial.print(status);
-			}
+				}
   		break;
 
   		// 5.- Detect cow with vision (null, raspberry work)
@@ -355,28 +357,36 @@ void loop() {
 
   		// 7.- Enter below cow
   		case 7:
-			while((distLT.distance() > wallDistance || distLB.distance() > wallDistance || distRT.distance() > wallDistance || distRB.distance() > wallDistance) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
+			bool legLTDetected = false;
+			bool legLBDetected = false;
+			bool legRTDetected = false;
+			bool legRBDetected = false;
+			while(!(legLTDetected && legLBDetected && legRTDetected && legRBDetected) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
 			{
+				legLTDetected = distLT.distance() > wallDistance ? legLTDetected : true;
+				legRTDetected = distRT.distance() > wallDistance ? legRTDetected : true;
 				MLB->run(FORWARD);
 				MRB->run(FORWARD);
 				MRF->run(FORWARD);
 				MLF->run(FORWARD);
-				if(distLT.distance() > wallDistance && distRT.distance() <= wallDistance)
+				if(!legLTDetected && legRTDetected)
 				{
-					MRB->setSpeed(0);
-					MRF->setSpeed(0);
+					MRB->run(BRAKE);
+					MRF->run(BRAKE);
 				}
-				else if(distLT.distance() <= wallDistance && distRT.distance() > wallDistance)
+				else if(legLTDetected && !legRTDetected)
 				{
-					MLB->setSpeed(0);
-					MLF->setSpeed(0);
+					MLB->run(BRAKE);
+					MLF->run(BRAKE);
 				}
-				else if(distLT.distance() <= wallDistance && distRT.distance() <= wallDistance)
+				else if(legLTDetected && legRTDetected)
 				{
-					MLB->setSpeed(100);
-					MRB->setSpeed(100);
-					MRF->setSpeed(100);
-					MLF->setSpeed(100);
+					legLBDetected = distLB.distance() > wallDistance ? legLBDetected : true;
+					legRBDetected = distRB.distance() > wallDistance ? legRBDetected : true;
+					MLB->run(FORWARD);
+					MRB->run(FORWARD);
+					MRF->run(FORWARD);
+					MLF->run(FORWARD);
 				}
 			}
 			stopMotors();
@@ -391,7 +401,12 @@ void loop() {
 
   		// 9.- Exit cow
   		case 9:
-
+				moveBackward(40);
+				while(Serial.available() < 0);
+  			int wallAngle = Serial.readString().toInt();
+  			turnTo(wallAngle);
+  			String status = moveForward(500);
+  			Serial.print(status);
   		break;
 
   		// 10.- Return to empty terrines zone (null, use case 4)
@@ -400,7 +415,46 @@ void loop() {
 
   		// 11.- Search door
   		case 11:
-  		
+  			float oPos = getOrientation();
+  			if(oPos >= 360 - precisionIMU || oPos <= precisionIMU || (oPos >= 90 - precisionIMU && oPos <= 90 + precisionIMU))
+  			{
+  				while(distRT.distance() > wallDistance || distRB.distance() > wallDistance)
+  				{
+					  while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distRT.distance() > wallDistance || distRB.distance() > wallDistance))
+					  {
+					  	MLB->run(FORWARD);
+							MRB->run(FORWARD);
+							MRF->run(FORWARD);
+							MLF->run(FORWARD);
+					  }
+					  stopMotors();
+					  if(distFR.distance() <= wallDistance + 3 && distFL.distance() <= wallDistance + 3)
+					  	turnLeft(90);
+				  }
+				  moveForward(15);
+				  turnRight(90);
+				  moveForward(50);
+  			}
+  			else 
+  			{
+  				while(distLT.distance() > wallDistance || distLB.distance() > wallDistance)
+  				{
+					  while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distLT.distance() > wallDistance || distLB.distance() > wallDistance))
+					  {
+					  	MLB->run(FORWARD);
+							MRB->run(FORWARD);
+							MRF->run(FORWARD);
+							MLF->run(FORWARD);
+					  }
+					  stopMotors();
+					  if(distFR.distance() <= wallDistance + 3 && distFL.distance() <= wallDistance + 3)
+					  	turnRight(90);
+				  }
+				  moveForward(15);
+				  turnLeft(90);
+				  moveForward(50);
+  			}
+  			Serial.print("0");
   		break;
 
   		// 12.- Localize milk tank

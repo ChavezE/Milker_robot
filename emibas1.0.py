@@ -202,39 +202,46 @@ NORTH 	|			  |	SOUTH
 headingWall = "N"
 def analizeEnviroment():
 	checkCorner = False
+	cowFound = False
 	while 1:
 		if checkCorner:
 			turnBot("45")
-			takePicture()
-			# BRAKING INTO OTHER STATE HERE
-			# BRAKING INTO OTHER STATE HERE
+			cowFound = takePicture()
+			if cowFound:
+				break
+
 			turnBot("-45")
 			checkCorner = False
+		else:
+			# face center of arena and look for cow
+			turnBot("right")
+			cowFound =  takePicture() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
+			if cowFound:
+				break
+			turnBot("left") 
 
-		# face center of arena and look for cow
-		turnBot("right")
-		takePicture() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
-		# BRAKING INTO OTHER STATE HERE
-		# BRAKING INTO OTHER STATE HERE
-		turnBot("left") 
+		cowFound = takePicture() # to see if can keep moving on that direction
+		if cowFound:
+			break
 
-		takePicture() # to see if can keep moving on that direction
 		res = moveBot("forward")
 		if res == "0":
-			
+			pass # we havent arrived to the wall
 		elif res == "-1":
+			pass # something went wrong 
+		elif res == "1":
 			# most probable you're at the corner
 			# check the corner
 			checkCorner = True
 			turnBot("right")
-			headingWall = updateDirection (headingWall) # update global 
+			headingWall = updateDirection(headingWall) # update global 
 
 
 
 # After we milked cow, it's time to go to the gate
-def returnToWall():
+def goAlamus():
 
-	arduino.write("10")
+	arduino.write("9")
 	# Get to the wall you were before
 	if headingWall == "E":
 		arduino.write("0")
@@ -242,7 +249,7 @@ def returnToWall():
 		arduino.write("90")
 	else headingWall == "W":
 		arduino.write("180")
-	# note : if you're heading to N you can't trust your wall
+
 
 	
 
@@ -257,11 +264,10 @@ def main():
 		# confirmTerrineZone()	# Check out that the robot is ready to search for the terrine
 		# findTerrine()
 		# grabTerrine()
-		# goodFrm, imgOriginal = rb.takePicture()
 		# analizeEnviroment()	# Search for the motherfucker cow
 		# positionInFrontCowLateral()
-		# isThereACow()	
-		# returnToWall()
+		# milk()
+		# goAlamus()
 
 main()
 cap.release()

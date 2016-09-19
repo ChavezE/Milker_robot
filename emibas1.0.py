@@ -20,7 +20,7 @@ cap = cv2.VideoCapture(0)
 if not cap.isOpened():
         cap.release()
 	raise IOError("Cannot open webcam")
-arduino = serial.Serial('/dev/ttyACM1',9600, timeout = 3)
+arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 3)
 # When testing, setup the threshold value
 # binValue = raw_input('Define threshold value: ')
 ##---------------------------##
@@ -32,26 +32,24 @@ def takePicture():
       cap.grab()
    goodFrm, img = cap.read()
    mainFrame = img 	# Update global image variable
-   cv2.imshow('m',mainFrame)
-   cv2.waitKey(0)
-   cv2.destroyAllWindows()
+  
    return goodFrm
 
 # This function is for the 1st case of the Arduino. The position of the terrines 
 # should detect a wall with the left and back distance sensors.
 def confirmTerrineZone():
+        arduino.flushInput()
+        arduino.flushOutput()
 	arduino.write("1")	# Execute the 1st state of the arduino
-	res = ""
-	while res != "0":
-                while (arduino.inWaiting() < 0):
-                        pass
-                res = arduino.read(2)
-                print "Res: ",res
-                if (res == "0"):
-                        return True
-                else:
-                        arduino.write("1")
-        	
+	while (arduino.inWaiting() <= 0):
+                pass
+
+        res = arduino.read(2)
+        print "Res: ",res
+        if (res == "0"):
+                return True
+        else:
+                arduino.write("1")
 
 	# Now we need to wait for an acknowledgement from the arduino
 	# 0 - OK, -1 - Not OK
@@ -79,7 +77,9 @@ def grabTerrine():
 def isThereACow():	
 	# Take the picture
 	goodFrm = takePicture()
-
+        cv2.imshow('m',mainFrame)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 	# If the frame isn't corrupted, then analyze it.
 	if goodFrm:
 		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
@@ -88,7 +88,7 @@ def isThereACow():
 		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
 		cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
 		cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
-		# print "Len CowNeighs: ", len(cowNeighboors)
+		print "Len CowNeighs: ", len(cowNeighboors)
 
 
 		# If there are enough data, run the clustering algorithm
@@ -103,17 +103,17 @@ def isThereACow():
 
 			# Now its time to analyze the clusters
 			if clustersNotEmpty(clusters):	# The 3 clusters must have more than 1 element
-				# print "Cow is close to the center of the camera"
+				print "Cow is close to the center of the camera"
 				return True
 			# elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
 			# 	print "Rob must turn left in order to enter below the cow"
 			# elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
 			# 	print "Rob must turn right in order to enter below the cow"
 			else:
-				# print "No cow found"				
+				print "No cow found"				
 				return False	
 		else:
-			# print "No cow found"
+			print "No cow found"
 			return False
 		# Show main frame 
 		# cv2.imshow('f',mainFrame)
@@ -157,6 +157,8 @@ def drawClusters(clusters,img):
 # advice the arduino microcontroler that we are on line
 # sending signal and wait for aknowledgement 
 def checkForArduino():
+        arduino.flushInput()
+        arduino.flushOutput()
 	arduino.write("b") # sending the ping
 	ans = arduino.read()
 	print "Ans: ", ans
@@ -187,27 +189,28 @@ def moveBot(cm):
 	arduino.write("4")
 	arduino.write("0")
 	arduino.write(cm)
-	while(arduino.inWaiting() < 0):
+	while(arduino.inWaiting() <= 0):
 		pass
 	return(arduino.read(2))
 
 def turnBot(degrees):
-        print "Turnning Bot..."
         
+        arduino.flushInput()
+        arduino.flushOutput()
 	if degrees == "right":
+                print "Turn Right"
 		degrees = "90"
 	elif degrees == "left":
+                print "Turn Left"
 		degrees = "-90"
         
 	arduino.write("4")
 	arduino.write("1")
 	arduino.write(degrees)
         
-        time.sleep(10)
-	
-##	while(arduino.inWaiting() < 0):
-##                pass
-        ans = arduino.read()
+	while(arduino.inWaiting() <= 0):
+                pass
+        ans = arduino.read(2)
 	print "Ans: ",ans
 	return(ans)
 
@@ -258,9 +261,11 @@ def analizeEnviroment():
 			# face center of arena and look for cow
 			turnBot("right")
 			
-			cowFound =  isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
+			cowFound = isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
 			if cowFound:
+                                print "Cow found"
 				break
+			print "Not found cow"
 			turnBot("left") 
 
 		cowFound = isThereACow() # to see if can keep moving on that direction
@@ -327,8 +332,8 @@ def main():
 				analizeEnviroment()	# Search for the motherfucker cow
 ##				# positionInFrontCowLateral()
 ##				print "Cow Found"
-##				if(milk()):
-##					goAlamus()
+				if(milk()):
+					goAlamus()
 		time.sleep(5)
 
 main()

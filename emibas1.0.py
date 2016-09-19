@@ -18,8 +18,9 @@ mainFrame = cv2.imread('image5.jpg')	# Initialize global variable for image
 cap = cv2.VideoCapture(0)
 # Check that the connection with the camera is open
 if not cap.isOpened():
+        cap.release()
 	raise IOError("Cannot open webcam")
-arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 3)
+arduino = serial.Serial('/dev/ttyACM1',9600, timeout = 3)
 # When testing, setup the threshold value
 # binValue = raw_input('Define threshold value: ')
 ##---------------------------##
@@ -31,19 +32,26 @@ def takePicture():
       cap.grab()
    goodFrm, img = cap.read()
    mainFrame = img 	# Update global image variable
+   cv2.imshow('m',mainFrame)
+   cv2.waitKey(0)
+   cv2.destroyAllWindows()
    return goodFrm
 
 # This function is for the 1st case of the Arduino. The position of the terrines 
 # should detect a wall with the left and back distance sensors.
 def confirmTerrineZone():
-	arduino.write('1')	# Execute the 1st state of the arduino	
-	while (arduino.inWaiting() < 0):
-		pass
-
-	if (arduino.read(1) == '0'):
-		return True
-	else:
-		return False	
+	arduino.write("1")	# Execute the 1st state of the arduino
+	res = ""
+	while res != "0":
+                while (arduino.inWaiting() < 0):
+                        pass
+                res = arduino.read(2)
+                print "Res: ",res
+                if (res == "0"):
+                        return True
+                else:
+                        arduino.write("1")
+        	
 
 	# Now we need to wait for an acknowledgement from the arduino
 	# 0 - OK, -1 - Not OK
@@ -149,10 +157,23 @@ def drawClusters(clusters,img):
 # advice the arduino microcontroler that we are on line
 # sending signal and wait for aknowledgement 
 def checkForArduino():
-	arduino.write('b') # sending the ping
-	while (arduino.inWaiting() < 0):
-		pass
-	if (arduino.read(1) == 'b') # arduino is alive and ready
+	arduino.write("b") # sending the ping
+	ans = arduino.read()
+	print "Ans: ", ans
+	while(ans == ""):
+                print "Wait for 1 sec"
+                time.sleep(1)
+                arduino.write("b")
+                ans = arduino.read()
+##	waiting = arduino.inWaiting() 
+##	print "InW: ",waiting
+##	while (waiting < 0):
+##                waiting = arduino.inWaiting()
+##		print "InW: ",waiting
+##	print "InW: ",waiting
+##	res = arduino.read()
+##	print "Res: ",res
+	if(ans == "b"): # arduino is alive and ready
 		return True
 	else:
 		return False
@@ -163,25 +184,32 @@ def moveBot(cm):
 	elif cm == "backward":
 		cm = "-50"
 
-	arduino.write('4')
-	arduino.write('0')
+	arduino.write("4")
+	arduino.write("0")
 	arduino.write(cm)
 	while(arduino.inWaiting() < 0):
 		pass
-	return(arduino.read(1))
+	return(arduino.read(2))
 
 def turnBot(degrees):
-	if degrees = "right":
+        print "Turnning Bot..."
+        
+	if degrees == "right":
 		degrees = "90"
-	elif degrees = "left":
+	elif degrees == "left":
 		degrees = "-90"
-
-	arduino.write('4')
-	arduino.write('1')
+        
+	arduino.write("4")
+	arduino.write("1")
 	arduino.write(degrees)
-	while(arduino.inWaiting() < 0):
-		pass
-	return(arduino.read(1))
+        
+        time.sleep(10)
+	
+##	while(arduino.inWaiting() < 0):
+##                pass
+        ans = arduino.read()
+	print "Ans: ",ans
+	return(ans)
 
 def updateDirection(lasDir):
 	if lasDir == "N":
@@ -206,7 +234,7 @@ def updateDirection(lasDir):
 	 	 _____________
    		|			  | 
 NORTH 	|			  |	SOUTH
-   		|			 º|
+   		|			  |
    		-2----	-----1-
    			 ***
 
@@ -217,6 +245,7 @@ def analizeEnviroment():
 	checkCorner = False
 	cowFound = False
 	while 1:
+                print "Beginning to anaEnv"
 		if checkCorner:
 			turnBot("45")
 			cowFound = isThereACow()
@@ -228,6 +257,7 @@ def analizeEnviroment():
 		else:
 			# face center of arena and look for cow
 			turnBot("right")
+			
 			cowFound =  isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
 			if cowFound:
 				break
@@ -258,7 +288,7 @@ def goAlamus():
 		arduino.write("0")
 	elif headingWall == "S":
 		arduino.write("90")
-	else headingWall == "W":
+	elif headingWall == "W":
 		arduino.write("180")
 	while(arduino.inWaiting()<0):
 		pass
@@ -285,14 +315,21 @@ def milk():
 def main():
 	
 	while (1):
-		if(checkForArduino()):	# Send something to Arduino and recieve it back
+                print "Checking for Arduino"
+                
+		if(checkForArduino()):	# Send something to Arduino and recieve it 
+			print "Arduino is alive"
 			if(confirmTerrineZone()):	# Check out that the robot is ready to search for the terrine
-				# findTerrine()
-				# grabTerrine()
+				print "We are in Terrine Zone"
+##				# findTerrine()
+##				# grabTerrine()
+				print "Next, analyze environment"
 				analizeEnviroment()	# Search for the motherfucker cow
-				# positionInFrontCowLateral()
-				if(milk()):
-					goAlamus()
+##				# positionInFrontCowLateral()
+##				print "Cow Found"
+##				if(milk()):
+##					goAlamus()
+		time.sleep(5)
 
 main()
 cap.release()

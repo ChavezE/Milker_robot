@@ -338,13 +338,14 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
 
    if checkWith == 1:   # corner => topLeft
       found = False     # Flag to check if the tissue found a neighboor
-      for i in range(len(tCowSquares)):    # Go over all the elements in 'tCowSquares'
-         cowSquare= tCowSquares[i]
-         compareCoord = cowSquare.getBotRightC()
+      for i in range(len(tCowSquares)):    # Go over all the elements in 'tCowSquares' from 0 to len(cowSquares)-1
+         cowSquare= tCowSquares[i]        # temporal square
+         compareCoord = cowSquare.getBotRightC()   # use the corner of interest depending on the attribute 'checkWith'
+
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
-            tissue.append(c)
-            c.setLevel(curLevel + 1)
+            cowSquare.setLevel(curLevel + 1)   # Set the level of the square
+            tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
             tCowSquares.pop(i)
             break
@@ -360,8 +361,8 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          compareCoord = cowSquare.getBotLeftC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
-            tissue.append(c)
-            c.setLevel(curLevel + 1)
+            cowSquare.setLevel(curLevel + 1)   # Set the level of the square
+            tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
             tCowSquares.pop(i)
             break
@@ -377,8 +378,8 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          compareCoord = cowSquare.getTopRightC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
-            tissue.append(c)
-            c.setLevel(curLevel - 1)
+            cowSquare.setLevel(curLevel - 1)   # Set the level of the square
+            tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
             tCowSquares.pop(i)
             break
@@ -394,8 +395,8 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          compareCoord = cowSquare.geTopLeftC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
-            tissue.append(c)
-            c.setLevel(curLevel -) 1
+            cowSquare.setLevel(curLevel - 1)   # Set the level of the square
+            tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
             tCowSquares.pop(i)
             break

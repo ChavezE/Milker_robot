@@ -378,7 +378,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
             tissue.append(c)
-            c.setLevel(curLevel + 1)
+            c.setLevel(curLevel - 1)
             found = True
             tCowSquares.pop(i)
             break
@@ -395,7 +395,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
             tissue.append(c)
-            c.setLevel(curLevel + 1)
+            c.setLevel(curLevel - 1)
             found = True
             tCowSquares.pop(i)
             break

@@ -1,34 +1,138 @@
-# ------ LIBRARIES ----------
+##-----------LIBRARIES-----------##
 import cv2
 import time
 import math
 import numpy as np
-import random
 import LARC1 as rb
-# ---------------------------
+import random
+import serial
+##-------------------------------##
 
-filename = 'image5.jpg'
-binValue = 95	 # parameter for the threshold
+##-----------GLOBAL VARIABLES-----------##
+binValue = 90  # parameter for the threshold
+headingWall = "N"	# GLOBAL DIRECTION VARIABLE
+mainFrame = []	# Initialize global variable for image
+##--------------------------------------##
+
+##-----------SETUP-----------##
 cap = cv2.VideoCapture(0)
-
+# Check that the connection with the camera is open
 if not cap.isOpened():
+	cap.release()
 	raise IOError("Cannot open webcam")
-
+# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 # When testing, setup the threshold value
 # binValue = raw_input('Define threshold value: ')
-# binValue = float(binValue)
-# loads image as imgOriginal
-# This will have to change to taking snap everytime needed
-# in order to do this we must initialice cv2.videoCapture in the future
-# and remove parameter filename
-def loadImage(capName):
-	imgOriginal = cv2.imread(capName)
-	return imgOriginal
+##---------------------------##
 
-# imgOriginal = loadImage(filename)
-''' 	IN THIS AREA WE TEST POSIBLE FUNCTIONS OR CLASSES TO BE INSERTED 
-		IN LARC1 PERMANENTLY
-'''
+
+##-----------FUNCTIONS-----------##
+def takePicture():
+	#print "Take pic"
+	global mainFrame
+	for i in range(4):
+		cap.grab()
+	goodFrm, mainFrame = cap.read()
+
+	return goodFrm
+
+# This function is for the 1st case of the Arduino. The position of the terrines 
+# should detect a wall with the left and back distance sensors.
+def confirmTerrineZone():
+	arduino.flushInput()	
+	arduino.flushOutput()
+	arduino.write("1")	# Execute the 1st state of the arduino
+	res = " "
+	while res != "0":
+		while (arduino.inWaiting() <= 0):
+			pass
+		res = arduino.read(2)
+		# #print "Res: ",res
+		if (res == "0"):
+			return True
+		else:
+			arduino.write("1")
+
+	# Now we need to wait for an acknowledgement from the arduino
+	# 0 - OK, -1 - Not OK
+	# incom = ' '
+	# initTime = time.time()
+	# counTimeOut = time.time() - initTime
+	# while incom != '0' and incom != '-1' and counTimeOut < 15:
+		# incom = arduino.read(1)
+		# Count the seconds the loop has runned
+		# counTimeOut = time.time() - initTime	
+
+	# Check incom and counTimeOur in order to determine success
+	# if counTimeOut < 15 and incom == '0':
+		# Proceed to next function
+	# else:
+		# Determine a routine to handle the error
+
+def findTerrine():
+	arduino.write('2')
+
+def grabTerrine():
+	arduino.write('3')
+
+# Analyze a frame and tell whether there is enough information to analyze or not
+def isThereACow():	
+	#print "Is there a cow..."
+	# Take the picture
+	global mainFrame
+	goodFrm = takePicture()
+	# If the frame isn't corrupted, then analyze it.
+	if goodFrm:
+		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+		thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+		cv2.imshow('t',thresFrame)
+		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+		cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+		cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
+		#print "Len CowNeighs: ", len(cowNeighboors)
+
+
+		# If there are enough data, run the clustering algorithm
+		if len(cowNeighboors) > 3:
+			# Cluster the rectangles in order to obtain the center of the cow 
+			coordClusters = []	# List to sotre the centers' coordinates 
+			coordClusters.append([160,260])	# Left cluster's center
+			coordClusters.append([320,180])	# Center cluter's center
+			coordClusters.append([480,260])	# Right cluster's center
+			clusters = rb.findClusters(cowNeighboors,5,coordClusters)	# Make 5 iterations to determine the clusters
+			mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
+			theta,A,B = rb.ajusteDeCurvas(clusters[1].get_old_points())
+			x1 = 0
+			x2 = 600
+			y1 = int(A*x1 + B)
+			y2 = int(A*x2 + B)
+			cv2.line(mainFrame,(x1,y1),(x2,y2),(0,0,255),3)
+			# Now its time to analyze the clusters
+			if clustersNotEmpty(clusters):	# The 3 clusters must have more than 1 element
+				print "Cow is close to the center of the camera"
+				return True
+			elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
+				return False
+				print "Rob must turn left in order to enter below the cow"
+			elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
+				return False
+				print "Rob must turn right in order to enter below the cow"
+			else:
+				print "No cow found"				
+				return False	
+		else:
+			print "No cow found"
+			return False
+		# Show main frame 
+		# cv2.imshow('f',mainFrame)
+		# cv2.waitKey(0)
+		# cv2.destroyAllWindows()
+
+def clustersNotEmpty(clusters):
+	for cluster in clusters:
+		if len(cluster.get_old_points()) <= 1:
+			return False
+	return True	
 
 def drawClusters(clusters,img):
 	for i in range(len(clusters)):
@@ -43,174 +147,261 @@ def drawClusters(clusters,img):
 			y = list_1[j][1]
 			cv2.circle(img,(x,y),5,(b,g,r),-1)
 	return img
-# this function should return at most 3 vaules fo the cow:
-# - Angle of rotation
-# - Aprox Distance
-# - Center missmatch 
-def basicProcess(imgOriginal):
-	filteredImage = rb.clearImage(imgOriginal)	
-	thresImage = rb.doThresHold(filteredImage,binValue)
-	cv2.imshow('T',thresImage)
-	contours = rb.findContours(thresImage)
-	cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
-	cowRectangles = rb.getGoodSquares(contours,imgOriginal)
-	# We have this order 
-	# [area,extent,w,h,x,y]
-	# Good processing here, still have to make sure no cows are overlaping
 
-	n = neighboors(cowRectangles,2)
-
-	coordClusters = []
-	coordClusters.append([600,180])
-	coordClusters.append([425,180])
-	coordClusters.append([319,180])
-	coordClusters.append([213,180])
-	coordClusters.append([40,180])	
+# advice the arduino microcontroler that we are on line
+# sending signal and wait for aknowledgement 
+def checkForArduino():
 	
-	clusters = rb.findClusters(n,1,coordClusters)
-	for i in range(len(clusters)):
-		b = int ( random.uniform(50,255))
-		g = int ( random.uniform(50,255))
-		r = int ( random.uniform(50,255))
-		list_1 = clusters[i].get_old_points()
-		x,y = clusters[i].get_center()
-		cv2.circle(imgOriginal,(x,y),10,(b,g,r),4)
-		for j in range (len(list_1)):
-			x = list_1[j][0]
-			y = list_1[j][1]
-			cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
-
-	'''
-	# Interpretation of cow properties below #
-	theta,m,b = rb.ajusteDeCurvas(clusters[1].get_old_points()) 
-	print theta,m,b
-	if len(clusters[1].get_old_points()) < 3:
-		return "not enough data"
+	arduino.write("b") # sending the ping
+	ans = " "
+	time.sleep(1)
+	ans = arduino.read()
+	while ans != "b":
+		arduino.write("b")
+		time.sleep(1)
+		ans = arduino.read()	
+	
+	if(ans == "b"): # arduino is alive and ready
+		return True
 	else:
-		font = cv2.FONT_HERSHEY_SIMPLEX
-		cv2.putText(imgOriginal,("angle: " + str(theta)),(300,50), font, 0.7,(0,255,0),1,cv2.LINE_AA)
+		raise IOError("Can't connect with arduino")
 
-	cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
-	# print "Angulo :", theta
-	# Center of image here
-	# x = 720 / 2 
-	# y = 480 / 2
-	# cv2. circle(imgOriginal, (x,y),5,(0,0,255),-1)
-	cv2.imshow(filename,imgOriginal)
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
+def moveBot(cm):
+	if cm == "forward":
+		cm = "50"
+	elif cm == "backward":
+		cm = "-50"
 
-	return theta,clusters
-	'''
-# This funtion will recieve as a paramates a list with 3 objects from the class 'Cluster'.
-# The density of points inside each cluster will be counted and depending on it the next
-# movement will be decided. The best case will be to have the gratest number of clusters in the center.
-# If not, the rotation will be calculated depending on the cluster's center that has the greatest number 
-# of clusters. If two clusters have the same number of squares, the one that has the greatest mean 
-# area is the one that will pass.
-#def defineNextMovement(clusters):
+	arduino.write("4")
+	arduino.write("0")
+	arduino.write(cm)
+	while(arduino.inWaiting() <= 0):
+		pass
+	res = arduino.read(2)
+	return(res)
 
-''' FINISHES HERE '''
-################################################
-############### MAIN LOOP ######################
-################################################
+def turnBot(degrees):
+	arduino.flushInput()
+	arduino.flushOutput()
+	if degrees == "right":
+		#print "Turn Right"
+		degrees = "90"
+	elif degrees == "left":
+		#print "Turn Left"
+		degrees = "-90"
+        
+	arduino.write("4")
+	arduino.write("1")
+	arduino.write(degrees)
+        
+	while(arduino.inWaiting() <= 0):
+		pass
 
-def histEqualisationYUV(img):
-	img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-	img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
-	img_output = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-	return img_output
+	ans = arduino.read(2)
+	return(ans)
 
-def takePicture():
-   for i in range(4):
-      cap.grab()
-   goodFrm, img = cap.read()
-   return goodFrm, img
+def updateDirection(lasDir):
+	if lasDir == "N":
+		return "E"
+	elif lasDir == "S":
+		return "W"
+	elif lasDir == "E":
+		return "S"
+	else:
+		return "N"
 
-def loop():
-	
-	letter = 'd'
-	while(letter != 'f'):
 
-		# Takes a picture
-		for i in range(4):
-			cap.grab()
-		goodFrm, frame = cap.read()
-		cv2.imshow('f',frame)
-		# rows, cols = frame.shape[:2]
-		# gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		"""
-		# If the image is in good form, analyze it
-		if goodFrm:
-			# angle,clusters = basicProcess(frame)
-			frame = histEqualisationYUV(frame)
-			cv2.imshow('f',frame)
-			frame = rb.clearImage(frame)
-			thresImage = rb.doThresHold(frame,60)
-			cv2.imshow('T',thresImage)
-			#print "Angulo de rotacion : ", angle
-		"""
+# Explore the arena to find the desired misterious liquid (milk)
+# The coordenates of the arena will be taken this way:
+# This approach starts after picking up the terrine
+'''
+	NOMENCLATURE:
+	1. Empty Terrines zone
+	2. Drop Terrines zone
+
+			 EAST
+	 	 _____________
+   		|			  | 
+NORTH 	|			  |	SOUTH
+   		|			  |
+   		-2----	-----1-
+   			 ***
+
+   			 WEST
+'''
+
+def analizeEnviroment():
+	global headingWall
+	checkCorner = False
+	cowFound = False
+	while 1:
+		#print "Beginning to anaEnv"
+		if checkCorner:
+			turnBot("45")
+			#print "Turn Left 45"
+			cowFound = isThereACow()
+			if cowFound:
+				break
+
+			turnBot("-45")
+			#print "Turn Left 45"
+			checkCorner = False
+		else:
+			# face center of arena and look for cow
+			#print "Turn Right"
+			turnBot("right")
+			
+			cowFound = isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
+			if cowFound:
+				#print "Cow found"
+				break
+			#print "Not found cow"
+			turnBot("left") 
+			#print "Turn Left"
+
+		cowFound = isThereACow() # to see if can keep moving on that direction
+		if cowFound:
+			break
+
+		res = moveBot("forward")
+		if res == "0":
+			pass # we havent arrived to the wall
+		elif res == "-1":
+			pass # something went wrong 
+		elif res == "1":
+			# most probable you're at the corner
+			# check the corner
+			checkCorner = True
+			turnBot("right")
+			#print "Turn Right"
+			headingWall = updateDirection(headingWall) # update global 
+
+# After we milked cow, it's time to go to the gate
+def goAlamus():
+	arduino.write("9")
+	# Get to the wall you were before
+	if headingWall == "E":
+		arduino.write("0")
+	elif headingWall == "S":
+		arduino.write("90")
+	elif headingWall == "W":
+		arduino.write("180")
+	while(arduino.inWaiting()<=0):
+		pass
+	res = arduino.read(1)
+	if res == "0":
+		arduino.write("11")
+	else:
+	# Something went wrong
+		pass
+
+def milk():
+	arduino.write("7")
+	while (arduino.inWaiting):
+		pass
+	if(arduino.read(1) == "1"):
+		# It entered below the cow
+		return True
+	else:
+		# Something went wrong
+		return False
+##-------------------------------##
+
+##-----------MAIN FUNCTIONS-----------##
+def main():
+	char = " "
+	while(char != "f"):
+		isThereACow()
+		cv2.imshow('i',mainFrame)
 		cv2.waitKey(0)
 		cv2.destroyAllWindows()
+		char = raw_input("char: ")
+	# while (1):
+	# 	# #print "Checking for Arduino"
+	# 	if(checkForArduino()):	# Send something to Arduino and recieve it 
+	# 		#print "Arduino is alive"
+	# 		if(confirmTerrineZone()):	# Check out that the robot is ready to search for the terrine
+	# 			#print "We are in Terrine Zone"
+	# 			##				# findTerrine()
+	# 			##				# grabTerrine()
+	# 			#print "Next, analyze environment"
+	# 			analizeEnviroment()	# Search for the motherfucker cow
+	# 			##				# positionInFrontCowLateral()
+	# 			##				#print "Cow Found"
+	# 			if(milk()):
+	# 				goAlamus()
+	# 			time.sleep(5)
 
-		# LAST STEP... Ask if the user wants to take another picture
-		letter = raw_input('Letter: ')
-	
-def clustersNotEmpty(clusters):
-	for cluster in clusters:
-		if len(cluster.get_old_points()) <= 1:
-			return False
-	return True	
-
-# Analyze a frame and tell whether there is enough information to analyze or not
-# '0' - no cow, '1' - cow
-def isThereACow():	
-	letter = 'd'
-	while(letter != 'f'):
-		# Take the picture
-		goodFrm, mainFrame = takePicture()
-
-		# If the frame isn't corrupted, then analyze it.
-		if goodFrm:
-			filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
-			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
-			cv2.imshow('t',thresFrame)
-			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
-			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-			cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
-			print "Len CowNeighs: ",len(cowNeighboors)
-			# If there are enough data, run the clustering algorithm
-			if len(cowNeighboors) > 8:
-
-				# Cluster the rectangles in order to obtain the center of the cow 
-				coordClusters = []	# List to sotre the centers' coordinates 
-				coordClusters.append([160,260])	# Left cluster's center
-				coordClusters.append([320,180])	# Center cluter's center
-				coordClusters.append([480,260])	# Right cluster's center
-				clusters = rb.findClusters(cowNeighboors,5,coordClusters)	# Make 5 iterations to determine the clusters
-				mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
-
-				# Now its time to analyze the clusters
-				if clustersNotEmpty(clusters):	# The 3 clusters must have more than 1 element
-					print "Cow is close to the center of the camera"
-
-				elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
-					print "Rob must turn left in order to enter below the cow"
-					# arduino.write('1')
-					# arduino.write('-20')
-
-				elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
-					print "Rob must turn right in order to enter below the cow"
-					# arduino.write('1')
-					# arduino.write('20')
-			else:
-				print "No cow found, go to next square"
-			cv2.imshow('f',mainFrame)
-			cv2.waitKey(0)
-			cv2.destroyAllWindows()
-		letter = raw_input('Letter: ')
-
-
-isThereACow()
+main()
 cap.release()
 
+
+# Code that may be used in the futue...
+# for i in range(len(clusters)):
+# 	b = int ( random.uniform(0,255))
+# 	g = int ( random.uniform(0,255))
+# 	r = int ( random.uniform(0,255))
+# 	list_1 = clusters[i].get_old_points()
+# 	xc,yc = clusters[i].get_center()
+# 	cv2.circle(imgOriginal,(xc,yc),15,(b,g,r),3)
+# 	for j in range (len(list_1)):
+# 		x = list_1[j][0]
+# 		y = list_1[j][1]
+# 		cv2.circle(imgOriginal,(x,y),5,(b,g,r),-1)
+
+"""
+TEST COMMUNICATION WITH THE ARDUNIO
+"""
+# This code was for testing communication 
+# with the Arduino Microcontroller
+
+# incom = ''
+# while incom != 'R':
+# 	arduino.flush()
+# 	incom = arduino.read(1)
+
+# if incom == 'R':
+# 	for i in range(4):
+# 		cap.grab()
+# 	_, imgOriginal = cap.read()
+# 	filteredImage = rb.clearImage(imgOriginal)
+# 	thresImage = rb.doThresHold(filteredImage,binValue)
+# 	cv2.imshow('T',thresImage)
+# 	contours = rb.findContours(thresImage)
+# 	cv2.drawContours(imgOriginal,contours,-1,(0,0,255),1)
+# 	cowRectangles = rb.getGoodSquares(contours,imgOriginal)
+# 	# We have this order 
+# 	# [area,extent,w,h,x,y]
+# 	n = neighboors(cowRectangles)
+# 	# getting body here !!!! 
+# 	clusters = findClusters(3,n,100)
+
+	
+
+
+# 	for cluster in clusters:
+# 		#print "---------"
+# 		#print cluster.get_old_points()
+# 	theta,m,b = rb.ajusteDeCurvas(clusters[0].get_old_points())
+# 	#theta,m,b = rb.ajusteDeCurvas(n,len(n))
+# 	cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
+# 	#print "angulo ",theta
+# 	#print "ordenada al origen", b
+# 	cv2.imshow('i',imgOriginal)
+# 	c = 0
+# 	while c != 27:
+# 		c = cv2.waitKey(50)
+# 		break
+	
+# 	cv2.destroyAllWindows()
+
+# 	theta = abs(int(theta))
+# 	theta = str(theta)
+# 	arduino.write(theta)
+# 	echo = arduino.read(len(theta))
+# 	#print "Este es el echo: ", echo
+
+# 	if echo == theta:
+# 		#print 'jalando'
+# 	else:
+# 		#print 'no jalo'

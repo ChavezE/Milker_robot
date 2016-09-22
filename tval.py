@@ -36,7 +36,7 @@ def goLive():
     while (1):
     
         _, imgOriginal = cap.read()
-##        cv2.imshow('imgOriginal',imgOriginal)
+        cv2.imshow('imgOriginal',imgOriginal)
 ##        imgOriginal = cv2.resize(imgOriginal,None,fx=0.5,fy=0.5,interpolation=cv2.INTER_AREA)
         filteredImage = rb.clearImage(imgOriginal)
 

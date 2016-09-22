@@ -20,6 +20,63 @@ import random
 ######	 	LIST OF FUNCTIONS 	#######
 #######################################
 
+# Class Cow Rectangle
+class cowSquare:
+
+   ##-----------ATRIBUTES-----------##
+   x = y = w = h = area = level = 0
+   topLeftC = topRightC = botLeftC = botRightC = []
+
+   ##----------METHODS-----------##
+   def __init__(self,xT,yT,wT,hT,areaT):
+      self.x = xT
+      self.y = yT
+      self.w = wT
+      self.h = hT
+      self.area = areaT
+      self.topLeftC = [xT,yT]
+      self.topRightC = [xT+wT,yT]
+      self.botLeftC = [xT,yT+hT]
+      self.botRightC = [xT+wT,yT+hT]
+      self.level = 0
+
+   ##-----GETs-----##
+   def getX(self):
+      return self.x
+   def getY(self):
+      return self.y
+   def getW(self):
+      return self.w
+   def getH(self):
+      return self.h
+   def getArea(self):
+      return self.area
+   def getTopLeftC(self):
+      return self.topLeftC
+   def getTopRightC(self):
+      return self.topRightC
+   def getBotLeftC(self):
+      return self.botLeftC
+   def getBotRightC(self):
+      return self.botRightC
+
+   ##-----SETs-----##
+   def setX(self,xT):
+      self.x = xT
+   def setY(self,yT):
+      self.y = yT
+   def setW(self,wT):
+      self.w = wT
+   def setH(self,hT):
+      self.h = hT
+   def setArea(self,areaT):
+      self.area = areaT
+   def setLevel(lev):
+      self.level = lev
+
+   ##-----Other methods-----##
+
+
 # CLUSTERING CLASS that works along with the 'findClusters' function
 class Cluster:
    """Clustering modafoca points"""
@@ -78,7 +135,7 @@ class Cluster:
 # Does some guassian filtering to remove noise and converts image to gray scale :)
 def clearImage(imgOriginal):
 
-   imgOriginal[480*0.65:480,0:640] = [255,255,255]
+   # imgOriginal[480*0.65:480,0:640] = [255,255,255]
    imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
    imGray = cv2.GaussianBlur(imGray, (3,3), 2)
 
@@ -86,14 +143,34 @@ def clearImage(imgOriginal):
 
 def doThresHold(filteredImage,tVal):
 	_, thres1 = cv2.threshold(filteredImage,tVal,255,cv2.THRESH_BINARY_INV)
-	thres1 = cv2.erode(thres1,np.ones((3,3),np.uint8), iterations=5)
+	thres1 = cv2.erode(thres1,np.ones((3,3),np.uint8), iterations=4)
 	return thres1
 
-def centerOfContour(contour): # Returns the coordinates of the contour's center
-   M = cv2.moments(contour)
-   cx = int(M['m10']/M['m00'])
-   cy = int(M['m01']/M['m00'])
-   return cx, cy
+# This function will recieve contours, and 
+def getGoodSquares(contours,imgOriginal):
+
+   # ----VARIABLES----
+   cowSquares = []   # This list is the one that is going to being returned
+   # -----------------
+
+   for cnt in contours:
+      area = cv2.contourArea(cnt)
+      rect = cv2.minAreaRect(cnt)
+      w = int(rect[1][0])
+      h = int(rect[1][1])
+      rect_area = w * h
+      if(rect_area > 0): # sometimes this value is found
+         extent = float(area / rect_area)
+         if (extent >= 0.7 and area >= 100 and area <= 4000):   # tolerance
+            x,y,w,h = cv2.boundingRect(cnt)
+            tempCowSquare = cowSquare(x,y,w,h,area)    # Create an objet from the 'cowSquare' class
+            cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list        
+
+   # Print elements in cowSqrs
+   # printCowSquares(imgOriginal,255,255,255,cowSqrs)
+   
+   # AT THE END, RETURN THE LIST OF SQUARES THAT BELONG TO THE COW                                     
+   return cowSquares
 
 def printContourCoords(cx,cy,x,y):
    print "Center: %d, %d   LeftTopCorner: %d, %d" % (cx,cy,x,y)
@@ -126,37 +203,6 @@ def printCowSquares(imgOriginal,G,B,R,sqrs):
       y = sqr[5]
       cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
 
-# This method will recibe all countours in image and
-# will make all necesary filtering in order to achive
-# countors with high probability of being cow rectangles
-# it returns a mutidimensional list like this: 
-#     [k][area,extent,w,h,x,y]
-def getGoodSquares(contours,imgOriginal):
-
-   # ----VARIABLES----
-   cowSqrs = [] # This list is the one that is going to being returned
-   tempCowSqrs = []
-   # -----------------
-
-   for cnt in contours:
-      area = cv2.contourArea(cnt)
-      rect = cv2.minAreaRect(cnt)
-      w = int(rect[1][0])
-      h = int(rect[1][1])
-      rect_area = w * h
-      if(rect_area > 0): # sometimes this value is found
-         extent = float(area / rect_area)
-         if (extent >= 0.7 and area >= 50):   # tolerance
-            x,y,w,h = cv2.boundingRect(cnt)
-            aspect_ratio = float(w)/h
-            if aspect_ratio > 0.2 and aspect_ratio < 2:
-               cowSqrs.append([area,extent,w,h,x,y])
-
-   # Print elements in cowSqrs
-   printCowSquares(imgOriginal,255,255,255,cowSqrs)
-   
-   # AT THE END, RETURN THE LIST OF SQUARES THAT BELONG TO THE COW                                     
-   return cowSqrs
 
 # This function is still on progress, hope to return well ordered body of cow
 # in a convenient way 
@@ -212,7 +258,7 @@ def ajusteDeCurvas(bodyCoords):
    A = 0
    B = 0
    n = len(bodyCoords) # N is the lenght of the list body coords
-   if n > 0:
+   if n > 1:
       Xi = [] # [x1,x2,...,xN]
       Yi = [] # [y1,y2,...,yN]
       XiYi = [] #[x1*y1,x2*y2,...,xN*yN]
@@ -233,7 +279,7 @@ def ajusteDeCurvas(bodyCoords):
       sYi = sum(Yi)
       sXiYi = sum(XiYi)
       sXi2 = sum(Xi2)
-
+      
       # Now its time to compute A and B
       A = float((n*sXiYi)-(sXi*sYi))/((n*sXi2)-(pow(sXi,2)))
       B = float(((sXi2*sYi)-(sXiYi*sXi))/((n*sXi2)-(pow(sXi,2))))
@@ -271,8 +317,8 @@ def findClusters(cowRectangles,iterations,coordClusters):
 # This function returnsa list of coords with all those
 # that have more than 2 neihbors in a specific radius
 def neighboors(cowSquares):
-   radius = 150
-   neigh = []
+   radius = 100
+   neighboors = []
    for i in range (len(cowSquares)):
       xi = cowSquares[i][4]
       yi = cowSquares[i][5]
@@ -288,9 +334,96 @@ def neighboors(cowSquares):
 
    return neigh
 
+def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
+
+   if checkWith == 1:   # corner => topLeft
+      found = False
+      for i in len(tCowSquares):
+         c = tCowSquares[i]
+         compareCoord = cowSquare.getBotRightC()
+         # Find the distance between the two corners in order to find adjacent ones
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+            tissue.append(c)
+            c.setLevel(curLevel + 1)
+            found = True
+            tCowSquares.pop(i)
+            break
+      if found:
+         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue-1)].getTopLeftC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue-1)].getTopRightC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue-1)].getBotLeftC(), curLevel + 1)
+
+   elif checkWith == 2:   # corner => topRight
+      found = False
+      for i in len(tCowSquares):
+         c = tCowSquares[i]
+         compareCoord = cowSquare.getBotLeftC()
+         # Find the distance between the two corners in order to find adjacent ones
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+            tissue.append(c)
+            c.setLevel(curLevel + 1)
+            found = True
+            tCowSquares.pop(i)
+            break
+      if found:
+         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue-1)].getTopLeftC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue-1)].getTopRightC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue-1)].getBotRightC(), curLevel + 1)
+
+   elif checkWith == 3:   # corner => botLeft
+      found = False
+      for i in len(tCowSquares):
+         c = tCowSquares[i]
+         compareCoord = cowSquare.getTopRightC()
+         # Find the distance between the two corners in order to find adjacent ones
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+            tissue.append(c)
+            c.setLevel(curLevel + 1)
+            found = True
+            tCowSquares.pop(i)
+            break
+      if found:
+         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue-1)].getTopLeftC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue-1)].getBotLeftC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue-1)].getBotRightC(), curLevel - 1)
+
+   elif checkWith == 4:   # corner => botRight
+      found = False
+      for i in len(tCowSquares):
+         c = tCowSquares[i]
+         compareCoord = cowSquare.geTopLeftC()
+         # Find the distance between the two corners in order to find adjacent ones
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+            tissue.append(c)
+            c.setLevel(curLevel + 1)
+            found = True
+            tCowSquares.pop(i)
+            break
+      if found:
+         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue-1)].getTopRightC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue-1)].getBotLeftC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue-1)].getBotRightC(), curLevel - 1)
+   elif checkWith == 0:    
+      greatestTissue = []
+
+      while len(tCowSquares) > 0:
+         actSquare = tCowSquares.pop(0)
+         actSquare.setLevel(0)
+         tissue.append(actSquare)
+
+         makeTissue(tCowSquares, tissue, epsilon, 1, actSquare.getTopLeftC(), 0)
+         makeTissue(tCowSquares, tissue, epsilon, 2, actSquare.getTopRightC(), 0)
+         makeTissue(tCowSquares, tissue, epsilon, 3, actSquare.getBotLeftC(), 0)
+         makeTissue(tCowSquares, tissue, epsilon, 4, actSquare.getBotRightC(), 0)
+
+         if len(tissue) > len(greatestTissue):
+            greatestTissue = tissue
+
+      return greatestTissue
 
 
-
-
+   
+def distance(x1,y1,x2,y2):
+   return math.sqrt(pow(x2 - x1,2) + pow(y2 - y1,2))
 
 

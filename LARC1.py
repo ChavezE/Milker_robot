@@ -337,9 +337,9 @@ def neighboors(cowSquares):
 def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
 
    if checkWith == 1:   # corner => topLeft
-      found = False
+      found = False     # Flag to check if the tissue found a neighboor
       for i in len(tCowSquares):
-         c = tCowSquares[i]
+         cowSquare= tCowSquares[i]
          compareCoord = cowSquare.getBotRightC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
@@ -356,7 +356,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
    elif checkWith == 2:   # corner => topRight
       found = False
       for i in len(tCowSquares):
-         c = tCowSquares[i]
+         cowSquare= tCowSquares[i]
          compareCoord = cowSquare.getBotLeftC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
@@ -373,7 +373,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
    elif checkWith == 3:   # corner => botLeft
       found = False
       for i in len(tCowSquares):
-         c = tCowSquares[i]
+         cowSquare= tCowSquares[i]
          compareCoord = cowSquare.getTopRightC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
@@ -390,7 +390,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
    elif checkWith == 4:   # corner => botRight
       found = False
       for i in len(tCowSquares):
-         c = tCowSquares[i]
+         cowSquare= tCowSquares[i]
          compareCoord = cowSquare.geTopLeftC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
@@ -407,6 +407,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
       greatestTissue = []
 
       while len(tCowSquares) > 0:
+         tissue = []
          actSquare = tCowSquares.pop(0)
          actSquare.setLevel(0)
          tissue.append(actSquare)

@@ -349,9 +349,9 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
             tCowSquares.pop(i)
             break
       if found:
-         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue-1)].getTopLeftC(), curLevel + 1)
-         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue-1)].getTopRightC(), curLevel + 1)
-         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue-1)].getBotLeftC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue)-1].getTopLeftC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue)-1].getTopRightC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue)-1].getBotLeftC(), curLevel + 1)
 
    elif checkWith == 2:   # corner => topRight
       found = False
@@ -366,9 +366,9 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
             tCowSquares.pop(i)
             break
       if found:
-         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue-1)].getTopLeftC(), curLevel + 1)
-         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue-1)].getTopRightC(), curLevel + 1)
-         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue-1)].getBotRightC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue)-1].getTopLeftC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue)-1].getTopRightC(), curLevel + 1)
+         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue)-1].getBotRightC(), curLevel + 1)
 
    elif checkWith == 3:   # corner => botLeft
       found = False
@@ -383,9 +383,9 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
             tCowSquares.pop(i)
             break
       if found:
-         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue-1)].getTopLeftC(), curLevel - 1)
-         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue-1)].getBotLeftC(), curLevel - 1)
-         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue-1)].getBotRightC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 1, tissue[len(tissue)-1].getTopLeftC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue)-1].getBotLeftC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue)-1].getBotRightC(), curLevel - 1)
 
    elif checkWith == 4:   # corner => botRight
       found = False
@@ -395,14 +395,14 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
             tissue.append(c)
-            c.setLevel(curLevel - 1)
+            c.setLevel(curLevel -) 1
             found = True
             tCowSquares.pop(i)
             break
       if found:
-         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue-1)].getTopRightC(), curLevel - 1)
-         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue-1)].getBotLeftC(), curLevel - 1)
-         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue-1)].getBotRightC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue)-1].getTopRightC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue)-1].getBotLeftC(), curLevel - 1)
+         makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue)-1].getBotRightC(), curLevel - 1)
    elif checkWith == 0:    
       greatestTissue = []
 
@@ -412,7 +412,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          tissue.append(actSquare)
 
          makeTissue(tCowSquares, tissue, epsilon, 1, actSquare.getTopLeftC(), 0)
-         makeTissue(tCowSquares, tissue, epsilon, 2, actSquare.getTopRightC(), 0)
+         makeTissue(tCowSquares, tisue, epsilon, 2, actSquare.getTopRightC(), 0)
          makeTissue(tCowSquares, tissue, epsilon, 3, actSquare.getBotLeftC(), 0)
          makeTissue(tCowSquares, tissue, epsilon, 4, actSquare.getBotRightC(), 0)
 
@@ -424,6 +424,5 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
 
    
 def distance(x1,y1,x2,y2):
-   return math.sqrt(pow(x2 - x1,2) + pow(y2 - y1,2))
-
+  return math.sqrt(pow(x2 - x1,2) + pow(y2 - y1,2))
 

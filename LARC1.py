@@ -14,7 +14,10 @@ import cv2
 import time
 import math
 import numpy as np
+import LARC1 as rb
 import random
+import serial
+import statistics
 from copy import deepcopy
 # ---------------------------
 
@@ -166,11 +169,12 @@ def getGoodSquares(contours,imgOriginal):
          if (extent >= 0.7 and area >= 100 and area <= 4000):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
             tempCowSquare = cowSquare(x,y,w,h,area)    # Create an objet from the 'cowSquare' class
-            cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list        
-   squareMedian = statistics.median_grouped(cowSquares)
+            cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list    
+
+   squareMedian = statistics.median_grouped(cowSquares.getArea())
    tList = []
    for similarSquare in cowSquares:
-      if(similarSquare.area >= squareMedian - 500 and similarSquare.area <= squareMedian + 500):
+      if(similarSquare.getArea() >= squareMedian - 500 and similarSquare.getArea() <= squareMedian + 500):
          tList.append(similarSquare)
    # Print elements in cowSqrs
    # printCowSquares(imgOriginal,255,255,255,cowSqrs)

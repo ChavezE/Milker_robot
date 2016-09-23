@@ -6,6 +6,7 @@ import numpy as np
 import LARC1 as rb
 import random
 import serial
+import statistics
 ##-------------------------------##
 
 ##-----------GLOBAL VARIABLES-----------##
@@ -16,17 +17,15 @@ mainFrame = []	# Initialize global variable for image
 
 ##-----------SETUP-----------##
 
-def initCameraAndArduino():
-	cap = cv2.VideoCapture(0)
-	# Check that the connection with the camera is open
-	if not cap.isOpened():
-		cap.release()
-		raise IOError("Cannot open webcam")
+# cap = cv2.VideoCapture(0)
+# # Check that the connection with the camera is open
+# if not cap.isOpened():
+# 	cap.release()
+# 	raise IOError("Cannot open webcam")
 		
-def initArduino()
-	arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
-	# When testing, setup the threshold value
-	# binValue = raw_input('Define threshold value: ')
+# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
+# When testing, setup the threshold value
+# binValue = raw_input('Define threshold value: ')
 ##---------------------------##
 
 
@@ -297,7 +296,6 @@ def milk():
 
 def findTank():
 	letter = 't'
-	initCamera()
 	while(letter != 'f'):
 		mainFrame = takePicture()
 		hsv = cv2.cvtColor(mainFrame,cv2.COLOR_BGR2HSV)
@@ -369,9 +367,9 @@ def main():
 	# 				goAlamus()
 	# 			time.sleep(5)
 
-# main()
-findTank()
-cap.release()
+main()
+# findTank()
+# cap.release()
 
 
 # Code that may be used in the futue...

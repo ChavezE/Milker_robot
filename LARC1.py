@@ -167,12 +167,16 @@ def getGoodSquares(contours,imgOriginal):
             x,y,w,h = cv2.boundingRect(cnt)
             tempCowSquare = cowSquare(x,y,w,h,area)    # Create an objet from the 'cowSquare' class
             cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list        
-
+   squareMedian = statistics.median_grouped(cowSquares)
+   tList = []
+   for similarSquare in cowSquares:
+      if(similarSquare.area >= squareMedian - 500 and similarSquare.area <= squareMedian + 500):
+         tList.append(similarSquare)
    # Print elements in cowSqrs
    # printCowSquares(imgOriginal,255,255,255,cowSqrs)
    
    # AT THE END, RETURN THE LIST OF SQUARES THAT BELONG TO THE COW                                     
-   return cowSquares
+   return tList
 
 def printContourCoords(cx,cy,x,y):
    print "Center: %d, %d   LeftTopCorner: %d, %d" % (cx,cy,x,y)

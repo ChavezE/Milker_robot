@@ -228,10 +228,10 @@ void setup() {
   
   // init motors
   AFMS.begin();
-  MLB->setSpeed(70);
-  MRB->setSpeed(70);
-  MRF->setSpeed(70);
-  MLF->setSpeed(70);
+  MLB->setSpeed(120);
+  MRB->setSpeed(120);
+  MRF->setSpeed(120);
+  MLF->setSpeed(120);
   MLB->run(FORWARD);
   MRB->run(FORWARD);
   MRF->run(FORWARD);
@@ -269,33 +269,33 @@ void setup() {
   lcd.clear();
 
   // waiting for Raspberry to boot
-  /*
   while(Serial.available() <= 0)
   {
     lcd.setCursor(0,0);
     lcd.print("Booting Rasp...");
   }
-  Serial.print(Serial.read());
+  Serial.print(Serial.readString());
   lcd.clear();
   lcd.print("Rasp: OK");
   delay(500);
   lcd.clear();
-  */
 }
 
 //--------------------- Main program ----------------------//
-void loop() {
+void loop() {  
   if(Serial.available() > 0)
   {
-  	switch(Serial.readString().toInt())
+  	switch(Serial.read() - 48)
   	{
   		// 1.- Getting ready in the empty terrines zone
   		case 1:
+    	{
   			moveBackward(500);
   			if(distLT.distance() > wallDistance)
   				Serial.print("-1");
   			else
   				Serial.print("0");
+     	}
   		break;
 
   		// 2.- Find terrine
@@ -308,16 +308,17 @@ void loop() {
 
   		// 4.- Move in grid searching the cow
   		case 4:
+  		{
   			// Serial order: 
   			// #1 - move(0) or turn(1)
   			// #2 - cm or degrees
   			// Status:
   			// 0: OK
   			// -1: Cannot move that distance in that direction
-  			while(Serial.available() < 0);
-				if(Serial.readString().toInt())
+  			while(Serial.available() <= 0);
+				if(Serial.read() - 48 == 1)
 				{
-					while(Serial.available() < 0);
+					while(Serial.available() <= 0);
 					int angle = Serial.readString().toInt();
 			    lcd.clear();
 			    lcd.setCursor(12,0);
@@ -331,7 +332,7 @@ void loop() {
 				}
 				else
 				{
-					while(Serial.available() < 0);
+					while(Serial.available() <= 0);
 					int distance = Serial.readString().toInt();
 					lcd.clear();
 			    lcd.setCursor(0,0);
@@ -345,6 +346,7 @@ void loop() {
 			   		status = moveBackward(-distance);
 			   	Serial.print(status);
 				}
+			}
   		break;
 
   		// 5.- Detect cow with vision (null, raspberry work)
@@ -357,42 +359,44 @@ void loop() {
 
   		// 7.- Enter below cow
   		case 7:
-			bool legLTDetected = false;
-			bool legLBDetected = false;
-			bool legRTDetected = false;
-			bool legRBDetected = false;
-			while(!(legLTDetected && legLBDetected && legRTDetected && legRBDetected) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
-			{
-				legLTDetected = distLT.distance() > wallDistance ? legLTDetected : true;
-				legRTDetected = distRT.distance() > wallDistance ? legRTDetected : true;
-				MLB->run(FORWARD);
-				MRB->run(FORWARD);
-				MRF->run(FORWARD);
-				MLF->run(FORWARD);
-				if(!legLTDetected && legRTDetected)
-				{
-					MRB->run(BRAKE);
-					MRF->run(BRAKE);
-				}
-				else if(legLTDetected && !legRTDetected)
-				{
-					MLB->run(BRAKE);
-					MLF->run(BRAKE);
-				}
-				else if(legLTDetected && legRTDetected)
-				{
-					legLBDetected = distLB.distance() > wallDistance ? legLBDetected : true;
-					legRBDetected = distRB.distance() > wallDistance ? legRBDetected : true;
-					MLB->run(FORWARD);
-					MRB->run(FORWARD);
-					MRF->run(FORWARD);
-					MLF->run(FORWARD);
-				}
-			}
-			stopMotors();
-			if(distFL.distance() <= wallDistance || distFR.distance() <= wallDistance)
-				Serial.print("-1");
-			Serial.print("0");
+  		{
+  			bool legLTDetected = false;
+  			bool legLBDetected = false;
+  			bool legRTDetected = false;
+  			bool legRBDetected = false;
+  			while(!(legLTDetected && legLBDetected && legRTDetected && legRBDetected) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
+  			{
+  				legLTDetected = distLT.distance() > wallDistance ? legLTDetected : true;
+  				legRTDetected = distRT.distance() > wallDistance ? legRTDetected : true;
+  				MLB->run(FORWARD);
+  				MRB->run(FORWARD);
+  				MRF->run(FORWARD);
+  				MLF->run(FORWARD);
+  				if(!legLTDetected && legRTDetected)
+  				{
+  					MRB->run(BRAKE);
+  					MRF->run(BRAKE);
+  				}
+  				else if(legLTDetected && !legRTDetected)
+  				{
+  					MLB->run(BRAKE);
+  					MLF->run(BRAKE);
+  				}
+  				else if(legLTDetected && legRTDetected)
+  				{
+  					legLBDetected = distLB.distance() > wallDistance ? legLBDetected : true;
+  					legRBDetected = distRB.distance() > wallDistance ? legRBDetected : true;
+  					MLB->run(FORWARD);
+  					MRB->run(FORWARD);
+  					MRF->run(FORWARD);
+  					MLF->run(FORWARD);
+  				}
+  			}
+  			stopMotors();
+  			if(distFL.distance() <= wallDistance || distFR.distance() <= wallDistance)
+  				Serial.print("-1");
+  			Serial.print("0");
+  		}
   		break;
 
   		// 8.- Milk cow
@@ -401,12 +405,14 @@ void loop() {
 
   		// 9.- Exit cow
   		case 9:
+  		{
 				moveBackward(40);
-				while(Serial.available() < 0);
+				while(Serial.available() <= 0);
   			int wallAngle = Serial.readString().toInt();
   			turnTo(wallAngle);
   			String status = moveForward(500);
   			Serial.print(status);
+  		}
   		break;
 
   		// 10.- Return to empty terrines zone (null, use case 4)
@@ -415,6 +421,7 @@ void loop() {
 
   		// 11.- Search door
   		case 11:
+  		{
   			float oPos = getOrientation();
   			if(oPos >= 360 - precisionIMU || oPos <= precisionIMU || (oPos >= 90 - precisionIMU && oPos <= 90 + precisionIMU))
   			{
@@ -455,6 +462,7 @@ void loop() {
 				  moveForward(50);
   			}
   			Serial.print("0");
+  		}
   		break;
 
   		// 12.- Localize milk tank

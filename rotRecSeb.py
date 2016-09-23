@@ -17,11 +17,11 @@ mainFrame = []	# Initialize global variable for image
 
 ##-----------SETUP-----------##
 
-# cap = cv2.VideoCapture(0)
-# # Check that the connection with the camera is open
-# if not cap.isOpened():
-# 	cap.release()
-# 	raise IOError("Cannot open webcam")
+cap = cv2.VideoCapture(0)
+# Check that the connection with the camera is open
+if not cap.isOpened():
+	cap.release()
+	raise IOError("Cannot open webcam")
 		
 # arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 # When testing, setup the threshold value
@@ -295,14 +295,13 @@ def milk():
 		return False
 
 def findTank():
-	letter = 't'
-	while(letter != 'f'):
-		mainFrame = takePicture()
+	good = takePicture()
+	if good:
 		hsv = cv2.cvtColor(mainFrame,cv2.COLOR_BGR2HSV)
 
 		# Define 'red' in HSV colorspace
-		lower = np.array([0,150,150])
-		upper = np.array([0,255,255])
+		lower = np.array([0,100,50])
+		upper = np.array([0,100,255])
 
 		# Threshold the HSV image to get only red color
 		mask = cv2.inRange(hsv, lower, upper)
@@ -335,7 +334,6 @@ def main():
 
 	newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse = False)
 	
-	
 	greatestTissue = rb.makeTissue(newCowRectangles,[],30,0,[0,0],0)
 	for c in greatestTissue:
 		b = int ( random.uniform(50,255))
@@ -346,6 +344,7 @@ def main():
 		cv2.circle(mainFrame,(x,y),10,(b,g,r),4)
 		font = cv2.FONT_HERSHEY_SIMPLEX
 		cv2.putText(mainFrame,(str(c.getLevel())),(x,y+10), font, 0.5,(0,0,255),1,cv2.LINE_AA)
+
 	cv2.imshow('m',mainFrame)
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
@@ -367,9 +366,9 @@ def main():
 	# 				goAlamus()
 	# 			time.sleep(5)
 
-main()
-# findTank()
-# cap.release()
+# main()
+findTank()
+cap.release()
 
 
 # Code that may be used in the futue...

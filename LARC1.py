@@ -169,17 +169,18 @@ def getGoodSquares(contours,imgOriginal):
          if (extent >= 0.7 and area >= 100 and area <= 4000):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
             tempCowSquare = cowSquare(x,y,w,h,area)    # Create an objet from the 'cowSquare' class
-            cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list    
+            cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list  
+   printCowSquares(imgOriginal,255,255,0,cowSquares)  
    squareArea = []
-   for SquareArea in cowSquares
+   for SquareArea in cowSquares:
       squareArea.append(SquareArea.getArea())
    squareMedian = statistics.median_grouped(squareArea)
    tList = []
    for similarSquare in cowSquares:
-      if(similarSquare.getArea() >= squareMedian - 500 and similarSquare.getArea() <= squareMedian + 500):
+      if(abs(similarSquare.getArea() - squareMedian) <= 500):
          tList.append(similarSquare)
    # Print elements in cowSqrs
-   # printCowSquares(imgOriginal,255,255,255,cowSqrs)
+   printCowSquares(imgOriginal,255,255,255,tList)
    
    # AT THE END, RETURN THE LIST OF SQUARES THAT BELONG TO THE COW                                     
    return tList
@@ -209,10 +210,10 @@ def findMedian(index,l):
 # Receives the list 'sqrs' which contains the data in this order: [area,extent,w,h,x,y]
 def printCowSquares(imgOriginal,G,B,R,sqrs):
    for sqr in sqrs:
-      w = sqr[2]
-      h = sqr[3]
-      x = sqr[4]
-      y = sqr[5]
+      x = sqr.getX()
+      y = sqr.getY()
+      w = sqr.getW()
+      h = sqr.getH()
       cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
 
 

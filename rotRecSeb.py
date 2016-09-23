@@ -17,11 +17,11 @@ mainFrame = []	# Initialize global variable for image
 
 ##-----------SETUP-----------##
 
-cap = cv2.VideoCapture(0)
-# Check that the connection with the camera is open
-if not cap.isOpened():
-	cap.release()
-	raise IOError("Cannot open webcam")
+# cap = cv2.VideoCapture(0)
+# # Check that the connection with the camera is open
+# if not cap.isOpened():
+# 	cap.release()
+# 	raise IOError("Cannot open webcam")
 		
 # arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 # When testing, setup the threshold value
@@ -329,8 +329,7 @@ def main():
 	
 	contours = rb.findContours(thresFrame) # Finds all the contours inside the image
 	cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-	# cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
-	#print "Len CowNeighs: ", len(cowNeighboors)
+	
 
 	newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse = False)
 	
@@ -366,9 +365,9 @@ def main():
 	# 				goAlamus()
 	# 			time.sleep(5)
 
-# main()
-findTank()
-cap.release()
+main()
+# findTank()
+# cap.release()
 
 
 # Code that may be used in the futue...

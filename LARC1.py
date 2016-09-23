@@ -170,8 +170,10 @@ def getGoodSquares(contours,imgOriginal):
             x,y,w,h = cv2.boundingRect(cnt)
             tempCowSquare = cowSquare(x,y,w,h,area)    # Create an objet from the 'cowSquare' class
             cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list    
-
-   squareMedian = statistics.median_grouped(cowSquares.getArea())
+   squareArea = []
+   for SquareArea in cowSquares
+      squareArea.append(SquareArea.getArea())
+   squareMedian = statistics.median_grouped(squareArea)
    tList = []
    for similarSquare in cowSquares:
       if(similarSquare.getArea() >= squareMedian - 500 and similarSquare.getArea() <= squareMedian + 500):

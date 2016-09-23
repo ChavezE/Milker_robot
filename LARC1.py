@@ -15,6 +15,7 @@ import time
 import math
 import numpy as np
 import random
+from copy import deepcopy
 # ---------------------------
 
 ######	 	LIST OF FUNCTIONS 	#######
@@ -38,7 +39,6 @@ class cowSquare:
       self.topRightC = [xT+wT,yT]
       self.botLeftC = [xT,yT+hT]
       self.botRightC = [xT+wT,yT+hT]
-      self.level = 0
 
    ##-----GETs-----##
    def getX(self):
@@ -59,6 +59,8 @@ class cowSquare:
       return self.botLeftC
    def getBotRightC(self):
       return self.botRightC
+   def getLevel(self):
+      return self.level
 
    ##-----SETs-----##
    def setX(self,xT):
@@ -71,7 +73,7 @@ class cowSquare:
       self.h = hT
    def setArea(self,areaT):
       self.area = areaT
-   def setLevel(lev):
+   def setLevel(self,lev):
       self.level = lev
 
    ##-----Other methods-----##
@@ -392,7 +394,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
       found = False
       for i in range(len(tCowSquares)):
          cowSquare= tCowSquares[i]
-         compareCoord = cowSquare.geTopLeftC()
+         compareCoord = cowSquare.getTopLeftC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
             cowSquare.setLevel(curLevel - 1)   # Set the level of the square
@@ -404,23 +406,23 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          makeTissue(tCowSquares, tissue, epsilon, 2, tissue[len(tissue)-1].getTopRightC(), curLevel - 1)
          makeTissue(tCowSquares, tissue, epsilon, 3, tissue[len(tissue)-1].getBotLeftC(), curLevel - 1)
          makeTissue(tCowSquares, tissue, epsilon, 4, tissue[len(tissue)-1].getBotRightC(), curLevel - 1)
-   elif checkWith == 0:    
+   elif checkWith == 0:   
       greatestTissue = []
+      tissue = []
 
       while len(tCowSquares) > 0:
-         tissue = []
          actSquare = tCowSquares.pop(0)
          actSquare.setLevel(0)
          tissue.append(actSquare)
 
-         makeTissue(tCowSquares, tissue, epsilon, 1, actSquare.getTopLeftC(), 0)
-         makeTissue(tCowSquares, tisue, epsilon, 2, actSquare.getTopRightC(), 0)
+         # makeTissue(tCowSquares, tissue, epsilon, 1, actSquare.getTopLeftC(), 0)
+         makeTissue(tCowSquares, tissue, epsilon, 2, actSquare.getTopRightC(), 0)
          makeTissue(tCowSquares, tissue, epsilon, 3, actSquare.getBotLeftC(), 0)
          makeTissue(tCowSquares, tissue, epsilon, 4, actSquare.getBotRightC(), 0)
-
+         print len(tissue), len(greatestTissue)
          if len(tissue) > len(greatestTissue):
-            greatestTissue = tissue
-
+            greatestTissue = deepcopy(tissue)
+         tissue[:] = []
       return greatestTissue
 
 

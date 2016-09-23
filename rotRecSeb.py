@@ -9,17 +9,17 @@ import serial
 ##-------------------------------##
 
 ##-----------GLOBAL VARIABLES-----------##
-binValue = 90  # parameter for the threshold
+binValue = 110  # parameter for the threshold
 headingWall = "N"	# GLOBAL DIRECTION VARIABLE
 mainFrame = []	# Initialize global variable for image
 ##--------------------------------------##
 
 ##-----------SETUP-----------##
-cap = cv2.VideoCapture(0)
-# Check that the connection with the camera is open
-if not cap.isOpened():
-	cap.release()
-	raise IOError("Cannot open webcam")
+# cap = cv2.VideoCapture(0)
+# # Check that the connection with the camera is open
+# if not cap.isOpened():
+# 	cap.release()
+# 	raise IOError("Cannot open webcam")
 # arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 # When testing, setup the threshold value
 # binValue = raw_input('Define threshold value: ')
@@ -88,10 +88,11 @@ def isThereACow():
 		cv2.imshow('t',thresFrame)
 		contours = rb.findContours(thresFrame) # Finds all the contours inside the image
 		cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-		cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
+		# cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
 		#print "Len CowNeighs: ", len(cowNeighboors)
-
-
+		greatesTissue = rb.makeTissue(cowRectangles,[],30,0,[0,0],0)
+		print greatesTissue
+		'''
 		# If there are enough data, run the clustering algorithm
 		if len(cowNeighboors) > 3:
 			# Cluster the rectangles in order to obtain the center of the cow 
@@ -100,8 +101,8 @@ def isThereACow():
 			coordClusters.append([320,180])	# Center cluter's center
 			coordClusters.append([480,260])	# Right cluster's center
 			clusters = rb.findClusters(cowNeighboors,5,coordClusters)	# Make 5 iterations to determine the clusters
-			mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
-			theta,A,B = rb.ajusteDeCurvas(clusters[1].get_old_points())
+			# mainFrame = drawClusters(clusters, mainFrame)	# Draw each cluster in a different color
+			# theta,A,B = rb.ajusteDeCurvas(clusters[1].get_old_points())
 			x1 = 0
 			x2 = 600
 			y1 = int(A*x1 + B)
@@ -127,6 +128,7 @@ def isThereACow():
 		# cv2.imshow('f',mainFrame)
 		# cv2.waitKey(0)
 		# cv2.destroyAllWindows()
+		'''
 
 def clustersNotEmpty(clusters):
 	for cluster in clusters:
@@ -309,13 +311,37 @@ def milk():
 
 ##-----------MAIN FUNCTIONS-----------##
 def main():
-	char = " "
-	while(char != "f"):
-		isThereACow()
-		cv2.imshow('i',mainFrame)
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
-		char = raw_input("char: ")
+	mainFrame = cv2.imread('image5.jpg')
+	filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+	thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+	cv2.imshow('t',thresFrame)
+	# cv2.imshow('t',thresFrame)
+	# cv2.waitKey(0)
+	# cv2.destroyAllWindows()
+	
+	contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+	cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+	# cowNeighboors = rb.neighboors(cowRectangles) # Find squares that have at least to neighboors
+	#print "Len CowNeighs: ", len(cowNeighboors)
+
+	newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse = False)
+	
+	
+	greatestTissue = rb.makeTissue(newCowRectangles,[],30,0,[0,0],0)
+	for c in greatestTissue:
+		b = int ( random.uniform(50,255))
+		g = int ( random.uniform(50,255))
+		r = int ( random.uniform(50,255))
+		x = c.getX()
+		y = c.getY()
+		cv2.circle(mainFrame,(x,y),10,(b,g,r),4)
+		font = cv2.FONT_HERSHEY_SIMPLEX
+		cv2.putText(mainFrame,(str(c.getLevel())),(x,y+10), font, 0.5,(0,0,255),1,cv2.LINE_AA)
+	cv2.imshow('m',mainFrame)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
+	
+	
 	# while (1):
 	# 	# #print "Checking for Arduino"
 	# 	if(checkForArduino()):	# Send something to Arduino and recieve it 
@@ -333,7 +359,7 @@ def main():
 	# 			time.sleep(5)
 
 main()
-cap.release()
+# cap.release()
 
 
 # Code that may be used in the futue...

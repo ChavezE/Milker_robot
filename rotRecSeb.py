@@ -9,7 +9,7 @@ import serial
 ##-------------------------------##
 
 ##-----------GLOBAL VARIABLES-----------##
-binValue = 110  # parameter for the threshold
+binValue = 160  # parameter for the threshold
 headingWall = "N"	# GLOBAL DIRECTION VARIABLE
 mainFrame = []	# Initialize global variable for image
 ##--------------------------------------##
@@ -311,7 +311,7 @@ def milk():
 
 ##-----------MAIN FUNCTIONS-----------##
 def main():
-	mainFrame = cv2.imread('image5.jpg')
+	mainFrame = cv2.imread('image11.jpg')
 	filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
 	thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
 	cv2.imshow('t',thresFrame)

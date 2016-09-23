@@ -15,14 +15,18 @@ mainFrame = []	# Initialize global variable for image
 ##--------------------------------------##
 
 ##-----------SETUP-----------##
-# cap = cv2.VideoCapture(0)
-# # Check that the connection with the camera is open
-# if not cap.isOpened():
-# 	cap.release()
-# 	raise IOError("Cannot open webcam")
-# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
-# When testing, setup the threshold value
-# binValue = raw_input('Define threshold value: ')
+
+def initCameraAndArduino():
+	cap = cv2.VideoCapture(0)
+	# Check that the connection with the camera is open
+	if not cap.isOpened():
+		cap.release()
+		raise IOError("Cannot open webcam")
+		
+def initArduino()
+	arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
+	# When testing, setup the threshold value
+	# binValue = raw_input('Define threshold value: ')
 ##---------------------------##
 
 
@@ -44,30 +48,13 @@ def confirmTerrineZone():
 	arduino.write("1")	# Execute the 1st state of the arduino
 	res = " "
 	while res != "0":
-		while (arduino.inWaiting() <= 0):
-			pass
+		time.sleep(1.5)		# Wait for 1.5 seconds before reading a answer from Arduino
 		res = arduino.read(2)
 		# #print "Res: ",res
 		if (res == "0"):
 			return True
 		else:
 			arduino.write("1")
-
-	# Now we need to wait for an acknowledgement from the arduino
-	# 0 - OK, -1 - Not OK
-	# incom = ' '
-	# initTime = time.time()
-	# counTimeOut = time.time() - initTime
-	# while incom != '0' and incom != '-1' and counTimeOut < 15:
-		# incom = arduino.read(1)
-		# Count the seconds the loop has runned
-		# counTimeOut = time.time() - initTime	
-
-	# Check incom and counTimeOur in order to determine success
-	# if counTimeOut < 15 and incom == '0':
-		# Proceed to next function
-	# else:
-		# Determine a routine to handle the error
 
 def findTerrine():
 	arduino.write('2')
@@ -307,6 +294,30 @@ def milk():
 	else:
 		# Something went wrong
 		return False
+
+def findTank():
+	letter = 't'
+	initCamera()
+	while(letter != 'f'):
+		mainFrame = takePicture()
+		hsv = cv2.cvtColor(mainFrame,cv2.COLOR_BGR2HSV)
+
+		# Define 'red' in HSV colorspace
+		lower = np.array([0,150,150])
+		upper = np.array([0,255,255])
+
+		# Threshold the HSV image to get only red color
+		mask = cv2.inRange(hsv, lower, upper)
+
+		# Bitwise-AND mask and original image
+		res = cv2.bitwise_and(mainFrame,mainFrame,mask=mask)
+		res = cv2.medianBlur(res, 5)
+
+		cv2.imshow('m',mainFrame)
+		cv2.imshow('Color Detector', res)
+
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
 ##-------------------------------##
 
 ##-----------MAIN FUNCTIONS-----------##
@@ -358,8 +369,9 @@ def main():
 	# 				goAlamus()
 	# 			time.sleep(5)
 
-main()
-# cap.release()
+# main()
+findTank()
+cap.release()
 
 
 # Code that may be used in the futue...
@@ -405,29 +417,4 @@ TEST COMMUNICATION WITH THE ARDUNIO
 	
 
 
-# 	for cluster in clusters:
-# 		#print "---------"
-# 		#print cluster.get_old_points()
-# 	theta,m,b = rb.ajusteDeCurvas(clusters[0].get_old_points())
-# 	#theta,m,b = rb.ajusteDeCurvas(n,len(n))
-# 	cv2.line(imgOriginal,(100,int(100*m+b)),(600,int(600*m+b)),(255,0,0),3)
-# 	#print "angulo ",theta
-# 	#print "ordenada al origen", b
-# 	cv2.imshow('i',imgOriginal)
-# 	c = 0
-# 	while c != 27:
-# 		c = cv2.waitKey(50)
-# 		break
-	
-# 	cv2.destroyAllWindows()
 
-# 	theta = abs(int(theta))
-# 	theta = str(theta)
-# 	arduino.write(theta)
-# 	echo = arduino.read(len(theta))
-# 	#print "Este es el echo: ", echo
-
-# 	if echo == theta:
-# 		#print 'jalando'
-# 	else:
-# 		#print 'no jalo'

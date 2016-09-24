@@ -467,14 +467,14 @@ def mode(data):
     """
     # Generate a table of sorted (value, frequency) pairs.
     table = _counts(data)
-    if len(table) == 1:
+    if len(table) != 0:
         return table[0][0]
-    elif table:
-        raise StatisticsError(
-                'no unique mode; found %d equally common values' % len(table)
-                )
     else:
         raise StatisticsError('no mode for empty data')
+    # elif table:
+    #     raise StatisticsError(
+    #             'no unique mode; found %d equally common values' % len(table)
+    #             )
 
 
 # === Measures of spread ===

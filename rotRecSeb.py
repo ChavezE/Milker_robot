@@ -157,9 +157,6 @@ def findTank():
 
 		cv2.waitKey(0)
 		cv2.destroyAllWindows()
-
-def mode(list):
-	actMax = []
 	
 def findMaxLevel(tissue):
 	maxLevel = []

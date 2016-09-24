@@ -283,11 +283,13 @@ void setup() {
 
 //--------------------- Main program ----------------------//
 void loop() {  
+	// TODO: Being able to start in different corners
   if(Serial.available() > 0)
   {
   	switch(Serial.read() - 48)
   	{
   		// 1.- Getting ready in the empty terrines zone
+  		// TODO: Correct to left wall if far away
   		case 1:
     	{
   			moveBackward(500);
@@ -404,6 +406,7 @@ void loop() {
   		break;
 
   		// 9.- Exit cow
+      // TODO: Handle when cow is in the middle of the robot movement
   		case 9:
   		{
 				moveBackward(40);
@@ -420,14 +423,15 @@ void loop() {
   		break;
 
   		// 11.- Search door
+      // TODO: Handle when cow is in the middle of the way
   		case 11:
   		{
   			float oPos = getOrientation();
   			if(oPos >= 360 - precisionIMU || oPos <= precisionIMU || (oPos >= 90 - precisionIMU && oPos <= 90 + precisionIMU))
   			{
-  				while(distRT.distance() > wallDistance || distRB.distance() > wallDistance)
+  				while(distRT.distance() <= wallDistance || distRB.distance() <= wallDistance)
   				{
-					  while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distRT.distance() > wallDistance || distRB.distance() > wallDistance))
+					  while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distRT.distance() <= wallDistance || distRB.distance() <= wallDistance))
 					  {
 					  	MLB->run(FORWARD);
 							MRB->run(FORWARD);
@@ -444,9 +448,9 @@ void loop() {
   			}
   			else 
   			{
-  				while(distLT.distance() > wallDistance || distLB.distance() > wallDistance)
+  				while(distLT.distance() <= wallDistance || distLB.distance() <= wallDistance)
   				{
-					  while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distLT.distance() > wallDistance || distLB.distance() > wallDistance))
+					  while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distLT.distance() <= wallDistance || distLB.distance() <= wallDistance))
 					  {
 					  	MLB->run(FORWARD);
 							MRB->run(FORWARD);
@@ -465,15 +469,15 @@ void loop() {
   		}
   		break;
 
-  		// 12.- Localize milk tank
+  		// 12.- Localize milk tank (null, use case 4 and vision)
   		case 12:
   		break;
 
-  		// 13.- Move towards milk tank
+  		// 13.- Move towards milk tank (null, use case 4)
   		case 13:
   		break;
 
-  		// 14.- Getting ready to deposit milk
+  		// 14.- Getting ready to deposit milk (null, use case 4 or change to use sharps)
   		case 14:
   		break;
 
@@ -481,7 +485,7 @@ void loop() {
   		case 15:
   		break;
 
-  		// 16.- Move towards exchange zone
+  		// 16.- Move towards exchange zone (null, use case 9)
   		case 16:
   		break;
 
@@ -495,6 +499,8 @@ void loop() {
 
   		// 19.- Go to empty terrines zone
   		case 19:
+  			turnTo(0);
+  			Serial.print("0");
   		break;
   		default:
   			// return 't' meaning no correct value received, resend.

@@ -24,14 +24,14 @@
 #include <SharpIR.h>
 
 //--------------------- Pins ------------------------------//
-const uint8_t sharpFL = A10;	// sharpFrontLeft
-const uint8_t sharpFR = A9;		// sharpFrontRight
-const uint8_t sharpRT = A7;		// sharpRightTop
-const uint8_t sharpRB = A8;		// sharpRightBottom
-const uint8_t sharpBL = A11;	// sharpBackLeft
-const uint8_t sharpBR = A12;	// sharpBackRight
-const uint8_t sharpLT = A14;	// sharpLeftTop
-const uint8_t sharpLB = A13;	// sharpLeftBottom
+const uint8_t sharpFL = A15;  // sharpFrontLeft
+const uint8_t sharpFR = A14;  // sharpFrontRight
+const uint8_t sharpRT = A12;  // sharpRightTop
+const uint8_t sharpRB = A13;  // sharpRightBottom
+const uint8_t sharpBL = A9;   // sharpBackLeft
+const uint8_t sharpBR = A8;   // sharpBackRight
+const uint8_t sharpLT = A11;  // sharpLeftTop
+const uint8_t sharpLB = A10;  // sharpLeftBottom
 
 const uint8_t encoderF = 18;	// encoderFront
 const uint8_t encoderB = 19;	// encoderBack

@@ -71,6 +71,7 @@ void turnRight(int angle)
     lcd.setCursor(4,0);
     lcd.print("      ");
     oPos = getOrientation();
+    Serial.println(oPos);
     lcd.setCursor(4,0);
     lcd.print(oPos);
   }
@@ -125,15 +126,18 @@ void setup() {
   {
     lcd.setCursor(0,0);
     lcd.print("IMU not working");
+    Serial.println("IMU not working");
     delay(1000);
     lcd.clear();
   }
   bno.setExtCrystalUse(true);
   lcd.setCursor(0,0);
   lcd.print("Calibrating IMU");
+  Serial.println("Calibrating IMU");
   while(getIMUCalStatus() <= 0);
   lcd.setCursor(0,1);
   lcd.print("Done");
+  Serial.println("Done");
   delay(500);
   lcd.clear();
 }

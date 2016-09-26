@@ -280,17 +280,16 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          tissue[:] = []
 
       greatestTissue = sorted(greatestTissue, key=lambda x:x.getLevel(), reverse=False)
-      
       iA = 0
       # Remove those squares who are unique at a specific level
-      while iA < len(greatestTissue):
-         if(iA == 0):
-            if(greatestTissue[iA+1].getLevel() != greatestTissue[iA].getLevel()):
+      while iA < len(greatestTissue) and len(greatestTissue) > 1:
+         if(iA == len(greatestTissue) - 1):
+            if(greatestTissue[iA-1].getLevel() != greatestTissue[iA].getLevel()):
                greatestTissue.pop(iA)
             else:
                iA += 1
-         elif(iA == len(greatestTissue) - 1):
-            if(greatestTissue[iA-1].getLevel() != greatestTissue[iA].getLevel()):
+         elif(iA == 0):
+            if(greatestTissue[iA+1].getLevel() != greatestTissue[iA].getLevel()):
                greatestTissue.pop(iA)
             else:
                iA += 1

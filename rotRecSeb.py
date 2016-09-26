@@ -28,21 +28,19 @@ import statistics
 ##-------------------------------##
 
 ##-----------GLOBAL VARIABLES-----------##
-binValue = 110  # parameter for the threshold
+binValue = 100  # parameter for the threshold
 headingWall = "N"	# GLOBAL DIRECTION VARIABLE
 mainFrame = []	# Initialize global variable for image
 ##--------------------------------------##
 
 ##-----------SETUP-----------##
-# cap = cv2.VideoCapture(0)
-# # Check that the connection with the camera is open
-# if not cap.isOpened():
-# 	cap.release()
-# 	raise IOError("Cannot open webcam")
+cap = cv2.VideoCapture(0)
+# Check that the connection with the camera is open
+if not cap.isOpened():
+	cap.release()
+	raise IOError("Cannot open webcam")
 		
 # arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
-# # When testing, setup the threshold value
-# binValue = raw_input('Define threshold value: ')
 ##---------------------------##
 
 
@@ -61,32 +59,31 @@ def analizeEnviroment():
 	cowFound = False
 	while 1:
 		#print "Beginning to anaEnv"
-		if checkCorner:
-			turnBot("45")
-			#print "Turn Left 45"
+		#print "Turn Right"
+		if checkCorner == False:
+			turnBot("right")
+			cowFound = isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
+			if cowFound:
+				break
+			turnBot("-45") 
 			cowFound = isThereACow()
 			if cowFound:
 				break
-
-			turnBot("-45")
-			#print "Turn Left 45"
-			checkCorner = False
-		else:
-			# face center of arena and look for cow
-			#print "Turn Right"
-			turnBot("right")
-			
-			cowFound = isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
+			turnBot("-45") 
+			cowFound = isThereACow()
 			if cowFound:
-				#print "Cow found"
 				break
-			#print "Not found cow"
-			turnBot("left") 
-			#print "Turn Left"
-
-		cowFound = isThereACow() # to see if can keep moving on that direction
-		if cowFound:
-			break
+		else:
+			turnBot("45") 
+			cowFound = isThereACow()
+			if cowFound:
+				break
+			turnBot("-45") 
+			cowFound = isThereACow()
+			if cowFound:
+				break
+			checkCorner = False
+		
 
 		res = moveBot("forward")
 		if res == "0":
@@ -94,59 +91,21 @@ def analizeEnviroment():
 		elif res == "-1":
 			pass # something went wrong 
 		elif res == "1":
-			# most probable you're at the corner
-			# check the corner
 			checkCorner = True
 			turnBot("right")
-			#print "Turn Right"
 			headingWall = updateDirection(headingWall) # update global 
-
-def isThereACow():	
-	# Analyze a frame and tell whether there is enough information to analyze or not
-	global mainFrame
-	goodFrm = takePicture()
 	
-	# If the frame isn't corrupted, then analyze it.
-	if goodFrm:
-		filteredFrame = rb.clearImage(mainFrame)	
-		thresFrame = rb.doThresHold(filteredFrame, binValue) 
-		# cv2.imshow('t',thresFrame)
-		contours = rb.findContours(thresFrame) 
-		cowRectangles = rb.getGoodSquares(contours,mainFrame) 
-		greatesTissue = rb.makeTissue(cowRectangles,[],30,0,[0,0],0)
-		print greatesTissue
-		'''
-			# theta,A,B = rb.ajusteDeCurvas(clusters[1].get_old_points())
-			
-			# Now its time to analyze the clusters
-			if clustersNotEmpty(clusters):	# The 3 clusters must have more than 1 element
-				print "Cow is close to the center of the camera"
-				return True
-			elif len(clusters[0].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
-				return False
-				print "Rob must turn left in order to enter below the cow"
-			elif len(clusters[2].get_old_points()) > 1 and len(clusters[1].get_old_points()) > 1:
-				return False
-				print "Rob must turn right in order to enter below the cow"
-			else:
-				print "No cow found"				
-				return False	
-		else:
-			print "No cow found"
-			return False
-		'''
-
 def findTank():
 	good = takePicture()
 	if good:
 		hsv = cv2.cvtColor(mainFrame,cv2.COLOR_BGR2HSV)
 
 		# Define 'red' in HSV colorspace
-		lower = np.array([0,100,50])
-		upper = np.array([0,100,255])
+		lower_range = np.array([169,100,100], dtype=np.uint8)
+		upper_range = np.array([189,255,255], dtype=np.uint8)
 
 		# Threshold the HSV image to get only red color
-		mask = cv2.inRange(hsv, lower, upper)
+		mask = cv2.inRange(hsv, lower_range, upper_range)
 
 		# Bitwise-AND mask and original image
 		res = cv2.bitwise_and(mainFrame,mainFrame,mask=mask)
@@ -154,7 +113,6 @@ def findTank():
 
 		cv2.imshow('m',mainFrame)
 		cv2.imshow('Color Detector', res)
-
 		cv2.waitKey(0)
 		cv2.destroyAllWindows()
 	
@@ -178,42 +136,90 @@ def findMaxLevel(tissue):
 
 def testImage():
 	global mainFrame
-	mainFrame = cv2.imread('image4.jpg')
-	filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
-	thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
-	cv2.imshow('t',thresFrame)
-	# cv2.waitKey(0)
-	# cv2.destroyAllWindows()
-	
-	contours = rb.findContours(thresFrame) # Finds all the contours inside the image
-	cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+	maxLenT = [] # maximumLenghtTissue
+	# mainFrame = cv2.imread('image1.jpg')
+	gF = takePicture()
+	if gF:
+		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+		for binValue in range(30,101,10):
+			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+			# cv2.imshow('t',thresFrame)
+			# cv2.waitKey(0)
+			# cv2.destroyAllWindows()
+			
+			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
 
-	newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse=True)
-	
-	greatestTissue = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
-	listMaxLevel = findMaxLevel(greatestTissue)
-	
-	drawGreatestTissue(greatestTissue)
-	theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
-	drawSlope(A,B)
-	print "Theta: ", theta
-	cv2.imshow('m',mainFrame)
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
+			newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse=True)
+			if len(newCowRectangles) > 1:
+				greatestTissue = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
+				if len(greatestTissue) > len(maxLenT):
+					maxLenT = greatestTissue
+		if len(maxLenT) != 0:
+			listMaxLevel = findMaxLevel(maxLenT)
+			drawGreatestTissue(maxLenT)
+			theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
+			# drawSlope(A,B)
+			listMaxLevel = sorted(listMaxLevel, key=lambda x:x.getX(), reverse = False)
+			limitRight = listMaxLevel[len(listMaxLevel)-1].getTopRightC()[0]
+			limitLeft = listMaxLevel[0].getX()
+			maxLenT = sorted(maxLenT, key=lambda x:x.getY(), reverse = False)
+			minY = maxLenT[0].getY()
+			drawLimits(limitLeft,limitRight,minY)
+			print "Theta: ", theta
+			cv2.imshow('mF',mainFrame)
+			cv2.waitKey(0)
+			cv2.destroyAllWindows()
+
+def isThereACow():	
+	global mainFrame
+	maxLenT = []
+	# mainFrame = cv2.imread('image1.jpg')
+	gF = takePicture()
+	if gF:
+		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+		for binValue in range(30,101,10):
+			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+			# cv2.imshow('t',thresFrame)
+			# cv2.waitKey(0)
+			# cv2.destroyAllWindows()
+			
+			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+
+			newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse=True)
+			if len(newCowRectangles) > 1:
+				greatestTissue = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
+				if len(greatestTissue) > len(maxLenT):
+					maxLenT = greatestTissue
+		if len(maxLenT) > 1:
+			listMaxLevel = findMaxLevel(maxLenT)
+			# drawGreatestTissue(maxLenT)
+			theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
+			# drawSlope(A,B)
+			huntingCow(theta,listMaxLevel)
+			print "Theta: ", theta
+			cv2.imshow('mF',mainFrame)
+			cv2.waitKey(0)
+			cv2.destroyAllWindows()
+		return False
+
+# def huntingCow(theta, maxLevel):
+	# maxLevel = sorted(maxLevel, key=lambda x:x.getX(), reverse=False)
+	# xLeft = maxLevel[0]
+	# xRight = 640 - maxLevel[len(maxLevel)-1]
+	# if len(maxLevel) > 3:
+	# 	if abs(xLeft - xRight) < 40:
+	# 		if theta > 0 and theta < 10:
 
 def main():
 	while (1):
-		#print "Checking for Arduino"
-		if(checkForArduino()):	# Send something to Arduino and recieve it 
-			#print "Arduino is alive"
-			if(confirmTerrineZone()):	# Check out that the robot is ready to search for the terrine
-				#print "We are in Terrine Zone"
-				##				# findTerrine()
-				##				# grabTerrine()
-				#print "Next, analyze environment"
+		if(checkForArduino()):
+			if(confirmTerrineZone()):	
+				# findTerrine()
+				# grabTerrine()
 				analizeEnviroment()	# Search for the motherfucker cow
-				##				# positionInFrontCowLateral()
-				##				#print "Cow Found"
+				# positionInFrontCowLateral()
 				if(milk()):
 					goAlamus()
 				time.sleep(5)
@@ -253,14 +259,18 @@ def updateDirection(lasDir):
 def drawGreatestTissue(greatestTissue):
 	global mainFrame
 	font = cv2.FONT_HERSHEY_SIMPLEX
+	areaT = 0
 	for c in greatestTissue:
+		areaT += c.getArea()
 		b = int ( random.uniform(50,255))
 		g = int ( random.uniform(50,255))
 		r = int ( random.uniform(50,255))
 		x = c.getX()
 		y = c.getY()
-		cv2.circle(mainFrame,(x,y),10,(b,g,r),4)
-		cv2.putText(mainFrame,(str(c.getLevel())),(x,y+10), font, 0.5,(0,0,255),1,cv2.LINE_AA)
+		cv2.circle(mainFrame,(x,y),5,(b,g,r),-1)
+		# cv2.putText(mainFrame,(str(c.getArea())),(x,y+10), font, 0.5,(0,0,255),1,cv2.LINE_AA)
+	# areaT /= len(greatestTissue)
+	# cv2.putText(mainFrame,(str(areaT)),(50,50), font, 1,(0,0,255),1,cv2.LINE_AA)
 
 def drawSlope(A,B):
 	x1 = 0
@@ -268,6 +278,18 @@ def drawSlope(A,B):
 	y1 = int(A*x1 + B)
 	y2 = int(A*x2 + B)
 	cv2.line(mainFrame,(x1,y1),(x2,y2),(0,0,255),3)
+
+def drawLimits(left,right,y):
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	cv2.line(mainFrame,(left,0),(left,480),(255,0,0),3)
+	cv2.line(mainFrame,(right,0),(right,480),(255,0,0),3)
+	cv2.line(mainFrame,(0,y),(640,y),(255,0,0),3)
+	cv2.putText(mainFrame,("diff L: " + str(left)),(30,20), font, 0.8,(0,0,255),1,cv2.LINE_AA)
+	cv2.putText(mainFrame,("diff R: " + str(640-right)),(30,50), font, 0.8,(0,0,255),1,cv2.LINE_AA)
+	cv2.putText(mainFrame,("diff Top: " + str(y)),(30,80), font, 0.8,(0,0,255),1,cv2.LINE_AA)
+
+def readFromFile(fileName):
+	
 ##-----------------------------------------##
 
 ##-----------Arduino Interaction-----------##
@@ -377,5 +399,29 @@ def goAlamus():
 ##--------------------------------------##
 
 ##-----------LOOP-----------##
-testImage()
+# checkForArduino()
+# print "Arduino OK..."
+# while 1:
+
+# 	testImage()
+# 	gira = raw_input("gira: ")
+# 	avanza = raw_input("avanza: ")
+# 	if avanza == 100:
+# 		milk()
+# 		break
+# 	else:
+# 		turnBot(gira)
+# 		moveBot(avanza)
+num = open('begin.txt','r').read()
+print num
+num = str(1+int(num))
+file = open('begin.txt','w')
+file.write(num)
+file.close()
+
+
 ##--------------------------##
+
+##-----------Final Instructions-----------##
+cap.release()
+##----------------------------------------##

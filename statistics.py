@@ -468,9 +468,9 @@ def mode(data):
     # Generate a table of sorted (value, frequency) pairs.
     table = _counts(data)
     if len(table) != 0:
-        return table[0][0]
+        return table[len(table)-1][0]
     else:
-        raise StatisticsError('no mode for empty data')
+        return 100
     # elif table:
     #     raise StatisticsError(
     #             'no unique mode; found %d equally common values' % len(table)
@@ -488,7 +488,7 @@ def mode(data):
 # amount of low-precision data. It has terrible numeric properties.
 #
 # See a comparison of three computational methods here:
-# http://www.johndcook.com/blog/2008/09/26/comparing-three-methods-of-computing-standard-deviation/
+#   http://www.johndcook.com/blog/2008/09/26/comparing-three-methods-of-computing-standard-deviation/
 
 def _ss(data, c=None):
     """Return sum of square deviations of sequence data.

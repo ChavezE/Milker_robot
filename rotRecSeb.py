@@ -289,7 +289,12 @@ def drawLimits(left,right,y):
 	cv2.putText(mainFrame,("diff Top: " + str(y)),(30,80), font, 0.8,(0,0,255),1,cv2.LINE_AA)
 
 def readFromFile(fileName):
-	
+	num = open('begin.txt','r').read()
+	print num
+	num = str(1+int(num))
+	file = open('begin.txt','w')
+	file.write(num)
+	file.close()
 ##-----------------------------------------##
 
 ##-----------Arduino Interaction-----------##
@@ -412,12 +417,7 @@ def goAlamus():
 # 	else:
 # 		turnBot(gira)
 # 		moveBot(avanza)
-num = open('begin.txt','r').read()
-print num
-num = str(1+int(num))
-file = open('begin.txt','w')
-file.write(num)
-file.close()
+
 
 
 ##--------------------------##

@@ -40,7 +40,7 @@ if not cap.isOpened():
 	cap.release()
 	raise IOError("Cannot open webcam")
 		
-# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
+arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 ##---------------------------##
 
 
@@ -353,8 +353,6 @@ def moveBot(cm):
 		return True
 
 def turnBot(degrees):
-	arduino.flushInput()
-	arduino.flushOutput()
 	if degrees == "right":
 		#print "Turn Right"
 		degrees = "90"
@@ -362,8 +360,8 @@ def turnBot(degrees):
 		#print "Turn Left"
 		degrees = "-90"
         
-	arduino.write("4")
-	arduino.write("1")
+	arduino.write("20")
+	# arduino.write("1")
 	arduino.write(degrees)
         
 	while(arduino.inWaiting() <= 0):
@@ -404,19 +402,19 @@ def goAlamus():
 ##--------------------------------------##
 
 ##-----------LOOP-----------##
-# checkForArduino()
-# print "Arduino OK..."
-# while 1:
+checkForArduino()
+print "Arduino OK..."
+while 1:
 
-# 	testImage()
-# 	gira = raw_input("gira: ")
-# 	avanza = raw_input("avanza: ")
-# 	if avanza == 100:
-# 		milk()
-# 		break
-# 	else:
-# 		turnBot(gira)
-# 		moveBot(avanza)
+	testImage()
+	gira = raw_input("gira: ")
+	avanza = raw_input("avanza: ")
+	if avanza == 100:
+		milk()
+		break
+	else:
+		turnBot(str(gira))
+		moveBot(str(avanza))
 
 
 

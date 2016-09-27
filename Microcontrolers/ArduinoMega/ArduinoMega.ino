@@ -525,13 +525,16 @@ void loop() {
   		break;
 
   		// 19.- Go to empty terrines zone
+     {
   		case 19:
   			turnTo(0);
   			Serial.print("0");
   		break;
 
       // 20.- Turn with the encoder
+     }
       case 20:
+      {
         while(Serial.available() <= 0);
         int angle = Serial.readString().toInt();
         if(angle > 0)   // + to the right and - to the left
@@ -540,15 +543,19 @@ void loop() {
           tLeft(angle);
         Serial.print("0");
       break;
+      }
 
       default:
+      {
         // return 't' meaning no correct value received, resend.
         Serial.print('t');
-
+        break;
+      }
+  	
         
         
- //  	}
- //  }
+ 	  }
+ 	}
   /*
   clk = millis();
   Serial.print('R');

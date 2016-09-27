@@ -178,7 +178,7 @@ def isThereACow():
 	gF = takePicture()
 	if gF:
 		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
-		for binValue in range(30,101,10):
+		for binValue in range(30,151,5):
 			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
 			# cv2.imshow('t',thresFrame)
 			# cv2.waitKey(0)
@@ -312,6 +312,8 @@ def checkForArduino():
 	# Arduino is alive if the RaspberryPi recieved a 'b'
 	if(ans == "b"): 
 		return True
+		arduino.flushInput()	
+		arduino.flushOutput()
 	else:
 		raise IOError("Can't connect with arduino")
 
@@ -349,6 +351,7 @@ def moveBot(cm):
 	while(arduino.inWaiting() <= 0):
 		pass
 	res = arduino.read(2)
+	print res
 	if res == 0:
 		return True
 
@@ -360,14 +363,15 @@ def turnBot(degrees):
 		#print "Turn Left"
 		degrees = "-90"
         
-	arduino.write("20")
-	# arduino.write("1")
+	arduino.write("4")
+	arduino.write("1")
 	arduino.write(degrees)
         
 	while(arduino.inWaiting() <= 0):
 		pass
 
 	ans = arduino.read(2)
+	print ans
 	return(ans)
 
 def milk():
@@ -409,7 +413,7 @@ while 1:
 	testImage()
 	gira = raw_input("gira: ")
 	avanza = raw_input("avanza: ")
-	if avanza == 100:
+	if avanza == "100":
 		milk()
 		break
 	else:

@@ -24,14 +24,14 @@
 #include <SharpIR.h>
 
 //--------------------- Pins ------------------------------//
-const uint8_t sharpFL = A10;  // sharpFrontLeft
-const uint8_t sharpFR = A9;   // sharpFrontRight
-const uint8_t sharpRT = A7;   // sharpRightTop
-const uint8_t sharpRB = A8;   // sharpRightBottom
-const uint8_t sharpBL = A11;  // sharpBackLeft
-const uint8_t sharpBR = A12;  // sharpBackRight
-const uint8_t sharpLT = A14;  // sharpLeftTop
-const uint8_t sharpLB = A13;  // sharpLeftBottom
+const uint8_t sharpFL = A15;  // sharpFrontLeft
+const uint8_t sharpFR = A14;  // sharpFrontRight
+const uint8_t sharpRT = A12;  // sharpRightTop
+const uint8_t sharpRB = A13;  // sharpRightBottom
+const uint8_t sharpBL = A9;   // sharpBackLeft
+const uint8_t sharpBR = A8;   // sharpBackRight
+const uint8_t sharpLT = A11;  // sharpLeftTop
+const uint8_t sharpLB = A10;  // sharpLeftBottom
 
 const uint8_t encoderF = 18;  // encoderFront
 const uint8_t encoderB = 19;  // encoderBack
@@ -63,7 +63,7 @@ SharpIR distLB(sharpLB, 25, 93, 2016);
 const float precisionIMU = 2.0;
 const unsigned int wallDistance = 8;
 const int stepsPerCm = 42;
-const float kp = 0.8;
+const float kp = 2.5;
 
 //--------------------- Global variables ------------------//
 volatile unsigned int stepsF = 0; // stepsFront
@@ -81,33 +81,53 @@ String moveForward(int distance)
   float ePos = getOrientation();
   float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
   float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
-  while(stepsF < distance*stepsPerCm && distFR.distance() > wallDistance && distFL.distance() > wallDistance)
+  clk = millis();
+  //while(stepsF < distance*stepsPerCm && distFR.distance() > wallDistance && distFL.distance() > wallDistance)
+  while(stepsF < distance*stepsPerCm)
   {
-    float oPos = getOrientation();
-    int angleNeeded = ePos - oPos;
-    if(angleNeeded > 180)
+    if(millis() - clk >= 200)
     {
-      rightMotorSpeed += (360-ePos+oPos) * kp;
-      MRB->setSpeed(rightMotorSpeed);
-      MRF->setSpeed(rightMotorSpeed);
-    }
-    else if(angleNeeded > 0)
-    {
-      rightMotorSpeed -= (angleNeeded) * kp;
-      MRB->setSpeed(rightMotorSpeed);
-      MRF->setSpeed(rightMotorSpeed);
-    }
-    else if(angleNeeded > -180)
-    {
-      rightMotorSpeed += (-angleNeeded) * kp;
-      MRB->setSpeed(rightMotorSpeed);
-      MRF->setSpeed(rightMotorSpeed);
-    }
-    else
-    {
-      rightMotorSpeed -= (360-oPos+ePos) * kp;
-      MRB->setSpeed(rightMotorSpeed);
-      MRF->setSpeed(rightMotorSpeed);
+      float oPos = getOrientation();
+      int angleNeeded = ePos - oPos;
+      byte operation;
+      if(angleNeeded > 180)
+      {
+        operation = (360-ePos+oPos) * kp;
+        rightMotorSpeed = rightMotorSpeed + operation >= 150 ? 150 : rightMotorSpeed + operation;
+        MRB->setSpeed(rightMotorSpeed);
+        MRF->setSpeed(rightMotorSpeed);
+      }
+      else if(angleNeeded > 0)
+      {
+        operation = (angleNeeded) * kp;
+        rightMotorSpeed = rightMotorSpeed - operation <= 80 ? 80 : rightMotorSpeed - operation;
+        MRB->setSpeed(rightMotorSpeed);
+        MRF->setSpeed(rightMotorSpeed);
+      }
+      else if(angleNeeded > -180)
+      {
+        operation = (-angleNeeded) * kp;
+        rightMotorSpeed = rightMotorSpeed + operation >= 150 ? 150 : rightMotorSpeed + operation;
+        MRB->setSpeed(rightMotorSpeed);
+        MRF->setSpeed(rightMotorSpeed);
+      }
+      else
+      {
+        operation = (360-oPos+ePos) * kp;
+        rightMotorSpeed = rightMotorSpeed - operation <= 80 ? 80 : rightMotorSpeed - operation;
+        MRB->setSpeed(rightMotorSpeed);
+        MRF->setSpeed(rightMotorSpeed);
+      }
+      Serial.print("oPos:");
+      Serial.print(oPos);
+      Serial.print("   AngleNeeded:");
+      Serial.print(angleNeeded);
+      Serial.print("   Operation:");
+      Serial.print(operation);
+      Serial.print("  RightMotorSpeed:");
+      Serial.println(rightMotorSpeed);
+
+      clk = millis();
     }
     
     MLB->run(FORWARD);
@@ -302,6 +322,7 @@ void setup() {
   delay(500);
   lcd.clear();
 
+  /*
   // waiting for Raspberry to boot
   while(Serial.available() <= 0)
   {
@@ -313,10 +334,14 @@ void setup() {
   lcd.print("Rasp: OK");
   delay(500);
   lcd.clear();
+  */
 }
 
 //--------------------- Main program ----------------------//
-void loop() {  
+void loop() { 
+  moveForward(4000);
+  delay(5000);
+  /*
   // TODO: Being able to start in different corners
   if(Serial.available() > 0)
   {

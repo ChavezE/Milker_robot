@@ -63,10 +63,14 @@ SharpIR distLB(sharpLB, 25, 93, 2016);
 const float precisionIMU = 2.0;
 const unsigned int wallDistance = 8;
 const int stepsPerCm = 42;
+const float kp = 0.8;
 
 //--------------------- Global variables ------------------//
 volatile unsigned int stepsF = 0; // stepsFront
 volatile unsigned int stepsB = 0; // stepsBack
+
+byte rightMotorSpeed = 120;
+byte leftMotorSpeed = 120;
 
 unsigned long clk;  //used to measure time
 
@@ -74,8 +78,38 @@ unsigned long clk;  //used to measure time
 String moveForward(int distance)
 {
   stepsF = 0;
+  float ePos = getOrientation();
+  float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
+  float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
   while(stepsF < distance*stepsPerCm && distFR.distance() > wallDistance && distFL.distance() > wallDistance)
   {
+    float oPos = getOrientation();
+    int angleNeeded = ePos - oPos;
+    if(angleNeeded > 180)
+    {
+      rightMotorSpeed += (360-ePos+oPos) * kp;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+    else if(angleNeeded > 0)
+    {
+      rightMotorSpeed -= (angleNeeded) * kp;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+    else if(angleNeeded > -180)
+    {
+      rightMotorSpeed += (-angleNeeded) * kp;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+    else
+    {
+      rightMotorSpeed -= (360-oPos+ePos) * kp;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+    
     MLB->run(FORWARD);
     MRB->run(FORWARD);
     MRF->run(FORWARD);
@@ -228,10 +262,10 @@ void setup() {
   
   // init motors
   AFMS.begin();
-  MLB->setSpeed(120);
-  MRB->setSpeed(120);
-  MRF->setSpeed(120);
-  MLF->setSpeed(120);
+  MLB->setSpeed(leftMotorSpeed);
+  MRB->setSpeed(rightMotorSpeed);
+  MRF->setSpeed(rightMotorSpeed);
+  MLF->setSpeed(leftMotorSpeed);
   MLB->run(FORWARD);
   MRB->run(FORWARD);
   MRF->run(FORWARD);

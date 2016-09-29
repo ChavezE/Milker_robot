@@ -322,7 +322,7 @@ void setup() {
   delay(500);
   lcd.clear();
 
-  /*
+  
   // waiting for Raspberry to boot
   while(Serial.available() <= 0)
   {
@@ -334,14 +334,11 @@ void setup() {
   lcd.print("Rasp: OK");
   delay(500);
   lcd.clear();
-  */
+  
 }
 
 //--------------------- Main program ----------------------//
 void loop() { 
-  moveForward(4000);
-  delay(5000);
-  /*
   // TODO: Being able to start in different corners
   if(Serial.available() > 0)
   {

@@ -28,7 +28,6 @@ import statistics
 ##-------------------------------##
 
 ##-----------GLOBAL VARIABLES-----------##
-binValue = 100  # parameter for the threshold
 headingWall = "N"	# GLOBAL DIRECTION VARIABLE
 mainFrame = []	# Initialize global variable for image
 ##--------------------------------------##
@@ -61,19 +60,33 @@ def analizeEnviroment():
 		#print "Beginning to anaEnv"
 		#print "Turn Right"
 		if checkCorner == False:
+			# 1st opportunity to find the cow
 			turnBot("right")
-			cowFound = isThereACow() # if COW IS FOUND, BRAKE THIS STATE AND GO TO NEXT
+			cowFound, cowTissue = isThereACow()
 			if cowFound:
-				break
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					center2center(go,lL,lR,lT,theta)
+					break
+			else:
+				# No cow found
+				pass
+			# 2nd opportunity to find the cow
+			turnBot("-45") 
+			cowFound, cowTissue = isThereACow()
+			if cowFound == 1:
+				return True
+			# 3rd opportunity to find the cow
 			turnBot("-45") 
 			cowFound = isThereACow()
-			if cowFound:
-				break
-			turnBot("-45") 
-			cowFound = isThereACow()
-			if cowFound:
-				break
+			if cowFound == 1:
+				return True
+			elif cowFound == 2:
+			# Rob must avoid the cow 
+				return False
 		else:
+		# Rob is in a corner
+
 			turnBot("45") 
 			cowFound = isThereACow()
 			if cowFound:
@@ -87,13 +100,16 @@ def analizeEnviroment():
 
 		res = moveBot("forward")
 		if res == "0":
-			pass # we havent arrived to the wall
+		# Rob has't arrived to the wall
+			pass 
 		elif res == "-1":
-			pass # something went wrong 
+		# Something went wrong 
+			pass 
 		elif res == "1":
+		# Rob is in the corner
 			checkCorner = True
 			turnBot("right")
-			headingWall = updateDirection(headingWall) # update global 
+			headingWall = updateDirection(headingWall) 
 	
 def findTank():
 	good = takePicture()
@@ -117,6 +133,7 @@ def findTank():
 		cv2.destroyAllWindows()
 	
 def findMaxLevel(tissue):
+	# Find the level of the tissue that has most squares. If tie, the higher.
 	maxLevel = []
 	levels = []
 	for t in tissue:
@@ -136,14 +153,15 @@ def findMaxLevel(tissue):
 					return maxLevel
 			return maxLevel
 
-def distanceToCow(x):
+def moveTo50(x):
+	# Move Rob to be 50 cm far away from the cow
 	y = 29.69*math.exp(0.0044*x)
-	# if y > 55 or y < 45:
-	# 	moveBot(str(int(y - 50)))
+	if y > 55 or y < 45:
+		moveBot(str(int(y - 50)))
 	return y
 
-def center2center(left,right,theta):
-
+def center2center(left,right,top,theta):
+	moveTo50(top)
 	if left > right:
 		correction = int((left- 100)/8.5) # cm
 		if theta > 0:
@@ -174,9 +192,6 @@ def calcCowLimits(maxLvl,tissue):
 	return limitLeft, limitRight, topY
 
 def isThereACow():
-	# 1 - go milk the cow
-	# 2 - cow but not able to milk
-	# 3 - no cow at all
 	global mainFrame
 	maxLenT = [] # maximumLenghtTissue
 	minNumSquares = 4
@@ -196,35 +211,32 @@ def isThereACow():
 				if len(greatestTissue) > len(maxLenT):
 					maxLenT = greatestTissue
 		#-------END FOR------
-		# If this statement is true, a tissue was found on the picture
-		if len(maxLenT) > minNumSquares: 
-			listMaxLevel = findMaxLevel(maxLenT)
-			theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
-			limitLeft,limitRight,topY = calcCowLimits(listMaxLevel,maxLenT)
-			dToCow = distanceToCow(topY) 
-			# center2center(limitLeft,(640 - limitRight),theta)
-			
-			##-------PRINTS-------
-			drawGreatestTissue(maxLenT)
-			drawSlope(A,B)
-			drawLimits(limitLeft,limitRight,topY)
-			# print dToCow
-			# print "limitleft : ", limitLeft
-			# print "limitright : ", limitRight
-			# print "Theta: ", theta
-			cv2.imshow('mF',mainFrame)
-			cv2.waitKey(0)
-			cv2.destroyAllWindows()
-			##--------------------
-			if 640 - limitLeft - (640 - limitRight) < 200:
-				# There is a cow but you can't milk it
-				return 2
-			else:
-				# Go milk the cow
-				return 1
+		if len(maxLenT) > 4:
+			return True, maxLenT
 		else:
-		# No cow at all
-			return 3
+			return False, maxLenT
+
+def isCowMilkeable(tissue):
+	# INPUT: maximunLengthTissue found in isThereACow
+	# OUTPUT : bool to go and milk the cow, limLeft, limRight, limTop
+	listMaxLevel = findMaxLevel(tissue)
+	theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
+	limLeft,limRight,limTop = calcCowLimits(listMaxLevel,tissue)
+	
+	##-------PRINTS-------
+	drawGreatestTissue(tissue)
+	drawSlope(A,B)
+	drawLimits(limLeft,limRight,limTop)
+	cv2.imshow('mF',mainFrame)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
+	##--------------------
+	if (640 - limLeft - (640 - limRight)) < 200:
+		# There is a cow but you can't milk it
+		return False,limLeft,limRight,limTop,theta
+	else:
+		# Go milk the cow
+		return True,limLeft,limRight,limTop,theta
 
 # def huntingCow(theta, maxLevel):
 	# maxLevel = sorted(maxLevel, key=lambda x:x.getX(), reverse=False)
@@ -235,13 +247,13 @@ def isThereACow():
 	# 		if theta > 0 and theta < 10:
 
 def main():
-	while (1):
-		if(checkForArduino()):
+	if(checkForArduino()):
+		while (1):
 			if(confirmTerrineZone()):	
 				# findTerrine()
 				# grabTerrine()
 				analizeEnviroment()	# Search for the motherfucker cow
-				# positionInFrontCowLateral()
+
 				if(milk()):
 					goAlamus()
 				time.sleep(5)
@@ -269,6 +281,7 @@ def clustersNotEmpty(clusters):
 	return True	
 
 def updateDirection(lasDir):
+
 	if lasDir == "N":
 		return "E"
 	elif lasDir == "S":
@@ -323,19 +336,17 @@ def readFromFile(fileName):
 def checkForArduino():
 	# Send a 'b' to tell the Arduino the RaspberryPi is alive
 	ans = " "
-	while ans != "b":
+	start = time.time()
+	while ans != "b" and time.time() - start < 30:
 		arduino.write("b")
 		time.sleep(1)
 		ans = arduino.read()	
-
-	arduino.flushInput()	
-	arduino.flushOutput()
-	
+	print "Time to boot arduino: ", (time.time() - start)
 	# Arduino is alive if the RaspberryPi recieved a 'b'
 	if(ans == "b"): 
-		return True
 		arduino.flushInput()	
 		arduino.flushOutput()
+		return True
 	else:
 		raise IOError("Can't connect with arduino")
 
@@ -426,21 +437,13 @@ def goAlamus():
 ##--------------------------------------##
 
 ##-----------LOOP-----------##
-# checkForArduino()
-# print "Arduino OK..."
-# while 1:
-# 	testImage()
-# 	res = milk()
-# 	if(res):
-# 		print "WE ARE UNDER THE MOTHERFUCKING COW"
-# 	else:
-# 		print "I FUCKED UP"
-	# takePicture()
-	# testImage()
-	# cv2.imshow('frame',mainFrame)
-	# cv2.waitKey(0)
-while 1:
-	print isThereACow()
+cowFound, cowTissue = isThereACow()
+	if cowFound:
+		print "Cow Found"
+		go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+		if go:
+			print "Trying to milk..."
+			center2center(lL,lR,lT,theta)
 ##--------------------------##
 
 ##-----------Final Instructions-----------##

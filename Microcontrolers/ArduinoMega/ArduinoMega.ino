@@ -82,8 +82,17 @@ String moveForward(int distance)
   float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
   float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
   clk = millis();
-  //while(stepsF < distance*stepsPerCm && distFR.distance() > wallDistance && distFL.distance() > wallDistance)
-  while(stepsF < distance*stepsPerCm)
+
+  float distanceFR = distFR.distance();
+  float distanceFL = distFL.distance();
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("FR:");
+  lcd.print(distanceFR);
+  lcd.setCursor(0,1);
+  lcd.print("FL:");
+  lcd.print(distanceFL);
+  while(stepsF < distance*stepsPerCm && distanceFR > wallDistance && distanceFL > wallDistance)
   {
     if(millis() - clk >= 200)
     {
@@ -118,22 +127,24 @@ String moveForward(int distance)
         MRB->setSpeed(rightMotorSpeed);
         MRF->setSpeed(rightMotorSpeed);
       }
-      Serial.print("oPos:");
-      Serial.print(oPos);
-      Serial.print("   AngleNeeded:");
-      Serial.print(angleNeeded);
-      Serial.print("   Operation:");
-      Serial.print(operation);
-      Serial.print("  RightMotorSpeed:");
-      Serial.println(rightMotorSpeed);
 
       clk = millis();
     }
-    
+
     MLB->run(FORWARD);
     MRB->run(FORWARD);
     MRF->run(FORWARD);
     MLF->run(FORWARD);
+
+    distanceFR = distFR.distance();
+    distanceFL = distFL.distance();
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("FR:");
+    lcd.print(distanceFR);
+    lcd.setCursor(0,1);
+    lcd.print("FL:");
+    lcd.print(distanceFL);
   }
   stopMotors();
   if(stepsF >= distance*stepsPerCm)
@@ -146,12 +157,30 @@ String moveForward(int distance)
 String moveBackward(int distance)
 {
   stepsF = 0;
-  while(stepsF < distance*stepsPerCm && distBR.distance() > wallDistance && distBL.distance() > wallDistance)
+  float distanceBR = distBR.distance();
+  float distanceBL = distBL.distance();
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("BR:");
+  lcd.print(distanceBR);
+  lcd.setCursor(0,1);
+  lcd.print("BL:");
+  lcd.print(distanceBL);
+  while(stepsF < distance*stepsPerCm && distanceBR > wallDistance && distanceBL > wallDistance)
   {
     MLB->run(BACKWARD);
     MRB->run(BACKWARD);
     MRF->run(BACKWARD);
     MLF->run(BACKWARD);
+    distanceBR = distBR.distance();
+    distanceBL = distBL.distance();
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("BR:");
+    lcd.print(distanceBR);
+    lcd.setCursor(0,1);
+    lcd.print("BL:");
+    lcd.print(distanceBL);
   }
   stopMotors();
   if(stepsF >= distance*stepsPerCm)
@@ -322,7 +351,6 @@ void setup() {
   delay(500);
   lcd.clear();
 
-  /*
   // waiting for Raspberry to boot
   while(Serial.available() <= 0)
   {
@@ -334,14 +362,10 @@ void setup() {
   lcd.print("Rasp: OK");
   delay(500);
   lcd.clear();
-  */
 }
 
 //--------------------- Main program ----------------------//
 void loop() { 
-  moveForward(4000);
-  delay(5000);
-  /*
   // TODO: Being able to start in different corners
   if(Serial.available() > 0)
   {

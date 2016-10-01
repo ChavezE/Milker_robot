@@ -47,7 +47,7 @@ arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 ##-----------MAIN FUNCTIONS-----------##
 def takePicture():
 	global mainFrame
-	for i in range(4):
+	for i in range(5):
 		cap.grab()
 	goodFrm, mainFrame = cap.read()
 
@@ -140,6 +140,29 @@ def distanceToCow(x):
 		moveBot(str(int(y - 50)))
 	return y
 
+def center2center(left,right,theta):
+
+	if left > right:
+		correction = int((left- 100)/8.5) # cm
+		if theta > 0:
+				turnBot(str(90 - theta * 2))
+				moveBot(str(correction))
+				turnBot(str(-90))
+		else:
+			turnBot(str(-(90 + theta * 2)))
+			moveBot(str(correction))
+			turnBot(str(90))		
+	else:
+		correction = int((right-100)/8.5) # cm
+		if theta > 0:
+				turnBot(str(90 - theta * 2))
+				moveBot(str(correction))
+				turnBot(str(-90))
+		else:
+			turnBot(str(-(90 + theta * 2)))
+			moveBot(str(correction))
+			turnBot(str(90))
+
 def testImage():
 	global mainFrame
 	maxLenT = [] # maximumLenghtTissue
@@ -172,17 +195,12 @@ def testImage():
 			limitLeft = listMaxLevel[0].getX()
 			maxLenT = sorted(maxLenT, key=lambda x:x.getY(), reverse = False)
 			minY = maxLenT[0].getY()
-			dToCow = distanceToCow(minY)
+			dToCow = distanceToCow(minY) 
 			print dToCow
-			if theta > 0:
-				turnBot(str(90 - theta * 2))
-				moveBot("50")
-				turnBot(str(-90))
-			else:
-				turnBot(str(-(90 + theta * 2)))
-				moveBot("50")
-				turnBot(str(90))
 			drawLimits(limitLeft,limitRight,minY)
+			print "limitleft : ", limitLeft
+			print "limitright : ", limitRight
+			# center2center(limitLeft,(640 - limitRight),theta)
 			print "Theta: ", theta
 			cv2.imshow('mF',mainFrame)
 			cv2.waitKey(0)
@@ -200,7 +218,7 @@ def isThereACow():
 			# cv2.imshow('t',thresFrame)
 			# cv2.waitKey(0)
 			# cv2.destroyAllWindows()
-			
+		
 			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
 			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
 
@@ -391,7 +409,7 @@ def turnBot(degrees):
 
 def milk():
 	arduino.write("7")
-	while (arduino.inWaiting <= 0):
+	while (arduino.inWaiting() <= 0):
 		pass
 	if(arduino.read(1) == "1"):
 		# It entered below the cow
@@ -425,6 +443,15 @@ checkForArduino()
 print "Arduino OK..."
 while 1:
 	testImage()
+	res = milk()
+	if(res):
+		print "WE ARE UNDER THE MOTHERFUCKING COW"
+	else:
+		print "I FUCKED UP"
+	# takePicture()
+	# testImage()
+	# cv2.imshow('frame',mainFrame)
+	# cv2.waitKey(0)
 
 
 

@@ -351,6 +351,10 @@ void setup() {
   delay(500);
   lcd.clear();
 
+<<<<<<< HEAD
+=======
+  
+>>>>>>> origin/master
   // waiting for Raspberry to boot
   while(Serial.available() <= 0)
   {
@@ -362,6 +366,10 @@ void setup() {
   lcd.print("Rasp: OK");
   delay(500);
   lcd.clear();
+<<<<<<< HEAD
+=======
+  
+>>>>>>> origin/master
 }
 
 //--------------------- Main program ----------------------//

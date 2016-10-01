@@ -134,6 +134,12 @@ def findMaxLevel(tissue):
 					return maxLevel
 			return maxLevel
 
+def distanceToCow(x):
+	y = 29.69*math.exp(0.0044*x)
+	if y > 55 or y < 45:
+		moveBot(str(int(y - 50)))
+	return y
+
 def testImage():
 	global mainFrame
 	maxLenT = [] # maximumLenghtTissue
@@ -159,12 +165,23 @@ def testImage():
 			listMaxLevel = findMaxLevel(maxLenT)
 			drawGreatestTissue(maxLenT)
 			theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
-			# drawSlope(A,B)
+			# print "tehta",theta
+			drawSlope(A,B)
 			listMaxLevel = sorted(listMaxLevel, key=lambda x:x.getX(), reverse = False)
 			limitRight = listMaxLevel[len(listMaxLevel)-1].getTopRightC()[0]
 			limitLeft = listMaxLevel[0].getX()
 			maxLenT = sorted(maxLenT, key=lambda x:x.getY(), reverse = False)
 			minY = maxLenT[0].getY()
+			dToCow = distanceToCow(minY)
+			print dToCow
+			if theta > 0:
+				turnBot(str(90 - theta * 2))
+				moveBot("50")
+				turnBot(str(-90))
+			else:
+				turnBot(str(-(90 + theta * 2)))
+				moveBot("50")
+				turnBot(str(90))
 			drawLimits(limitLeft,limitRight,minY)
 			print "Theta: ", theta
 			cv2.imshow('mF',mainFrame)
@@ -197,7 +214,7 @@ def isThereACow():
 			# drawGreatestTissue(maxLenT)
 			theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
 			# drawSlope(A,B)
-			huntingCow(theta,listMaxLevel)
+			# huntingCow(theta,listMaxLevel)
 			print "Theta: ", theta
 			cv2.imshow('mF',mainFrame)
 			cv2.waitKey(0)
@@ -352,8 +369,6 @@ def moveBot(cm):
 		pass
 	res = arduino.read(2)
 	print res
-	if res == 0:
-		return True
 
 def turnBot(degrees):
 	if degrees == "right":
@@ -409,16 +424,8 @@ def goAlamus():
 checkForArduino()
 print "Arduino OK..."
 while 1:
-
 	testImage()
-	gira = raw_input("gira: ")
-	avanza = raw_input("avanza: ")
-	if avanza == "100":
-		milk()
-		break
-	else:
-		turnBot(str(gira))
-		moveBot(str(avanza))
+
 
 
 

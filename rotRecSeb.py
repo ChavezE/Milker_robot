@@ -40,7 +40,7 @@ if not cap.isOpened():
 	cap.release()
 	raise IOError("Cannot open webcam")
 		
-arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
+# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 ##---------------------------##
 
 
@@ -124,10 +124,12 @@ def findMaxLevel(tissue):
 	modeLevels = statistics.mode(levels)
 	for i in range(len(tissue)):
 		t = tissue[i]
+		# Check for the 1st square of the most popular level
 		if t.getLevel() == modeLevels:
 			while t.getLevel() == modeLevels:
 				maxLevel.append(t)
 				i += 1
+				# Update the variable 't' or return maxLevel.
 				if i < len(tissue):
 					t = tissue[i]
 				else:
@@ -136,8 +138,8 @@ def findMaxLevel(tissue):
 
 def distanceToCow(x):
 	y = 29.69*math.exp(0.0044*x)
-	if y > 55 or y < 45:
-		moveBot(str(int(y - 50)))
+	# if y > 55 or y < 45:
+	# 	moveBot(str(int(y - 50)))
 	return y
 
 def center2center(left,right,theta):
@@ -163,81 +165,66 @@ def center2center(left,right,theta):
 			moveBot(str(correction))
 			turnBot(str(90))
 
-def testImage():
+def calcCowLimits(maxLvl,tissue):
+	maxLvl = sorted(maxLvl, key=lambda x:x.getX(), reverse = False)
+	limitRight = maxLvl[len(maxLvl)-1].getTopRightC()[0]
+	limitLeft = maxLvl[0].getX()
+	tissue = sorted(tissue, key=lambda x:x.getY(), reverse = False)
+	topY = tissue[0].getY()
+	return limitLeft, limitRight, topY
+
+def isThereACow():
+	# 1 - go milk the cow
+	# 2 - cow but not able to milk
+	# 3 - no cow at all
 	global mainFrame
 	maxLenT = [] # maximumLenghtTissue
+	minNumSquares = 4
 	# mainFrame = cv2.imread('image1.jpg')
-	gF = takePicture()
+	gF = takePicture() # returns boolean to know if the picture is OK
 	if gF:
 		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
-		for binValue in range(30,101,10):
+		# FOR: search for the best threshold value
+		for binValue in range(30,171,5):
 			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
-			# cv2.imshow('t',thresFrame)
-			# cv2.waitKey(0)
-			# cv2.destroyAllWindows()
-			
 			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
 			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-
 			newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse=True)
-			if len(newCowRectangles) > 1:
+			# When there are more than 4 squares, it can be found at least one tissue
+			if len(newCowRectangles) > minNumSquares:
 				greatestTissue = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
 				if len(greatestTissue) > len(maxLenT):
 					maxLenT = greatestTissue
-		if len(maxLenT) != 0:
+		#-------END FOR------
+		# If this statement is true, a tissue was found on the picture
+		if len(maxLenT) > minNumSquares: 
 			listMaxLevel = findMaxLevel(maxLenT)
-			drawGreatestTissue(maxLenT)
 			theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
-			# print "tehta",theta
-			drawSlope(A,B)
-			listMaxLevel = sorted(listMaxLevel, key=lambda x:x.getX(), reverse = False)
-			limitRight = listMaxLevel[len(listMaxLevel)-1].getTopRightC()[0]
-			limitLeft = listMaxLevel[0].getX()
-			maxLenT = sorted(maxLenT, key=lambda x:x.getY(), reverse = False)
-			minY = maxLenT[0].getY()
-			dToCow = distanceToCow(minY) 
-			print dToCow
-			drawLimits(limitLeft,limitRight,minY)
-			print "limitleft : ", limitLeft
-			print "limitright : ", limitRight
+			limitLeft,limitRight,topY = calcCowLimits(listMaxLevel,maxLenT)
+			dToCow = distanceToCow(topY) 
 			# center2center(limitLeft,(640 - limitRight),theta)
-			print "Theta: ", theta
+			
+			##-------PRINTS-------
+			drawGreatestTissue(maxLenT)
+			drawSlope(A,B)
+			drawLimits(limitLeft,limitRight,topY)
+			# print dToCow
+			# print "limitleft : ", limitLeft
+			# print "limitright : ", limitRight
+			# print "Theta: ", theta
 			cv2.imshow('mF',mainFrame)
 			cv2.waitKey(0)
 			cv2.destroyAllWindows()
-
-def isThereACow():	
-	global mainFrame
-	maxLenT = []
-	# mainFrame = cv2.imread('image1.jpg')
-	gF = takePicture()
-	if gF:
-		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
-		for binValue in range(30,151,5):
-			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
-			# cv2.imshow('t',thresFrame)
-			# cv2.waitKey(0)
-			# cv2.destroyAllWindows()
-		
-			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
-			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
-
-			newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse=True)
-			if len(newCowRectangles) > 1:
-				greatestTissue = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
-				if len(greatestTissue) > len(maxLenT):
-					maxLenT = greatestTissue
-		if len(maxLenT) > 1:
-			listMaxLevel = findMaxLevel(maxLenT)
-			# drawGreatestTissue(maxLenT)
-			theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
-			# drawSlope(A,B)
-			# huntingCow(theta,listMaxLevel)
-			print "Theta: ", theta
-			cv2.imshow('mF',mainFrame)
-			cv2.waitKey(0)
-			cv2.destroyAllWindows()
-		return False
+			##--------------------
+			if 640 - limitLeft - (640 - limitRight) < 200:
+				# There is a cow but you can't milk it
+				return 2
+			else:
+				# Go milk the cow
+				return 1
+		else:
+		# No cow at all
+			return 3
 
 # def huntingCow(theta, maxLevel):
 	# maxLevel = sorted(maxLevel, key=lambda x:x.getX(), reverse=False)
@@ -303,7 +290,7 @@ def drawGreatestTissue(greatestTissue):
 		x = c.getX()
 		y = c.getY()
 		cv2.circle(mainFrame,(x,y),5,(b,g,r),-1)
-		# cv2.putText(mainFrame,(str(c.getArea())),(x,y+10), font, 0.5,(0,0,255),1,cv2.LINE_AA)
+		cv2.putText(mainFrame,(str(c.getLevel())),(c.getX(),c.getY()), font, 0.5,(0,0,255),1,cv2.LINE_AA)
 	# areaT /= len(greatestTissue)
 	# cv2.putText(mainFrame,(str(areaT)),(50,50), font, 1,(0,0,255),1,cv2.LINE_AA)
 
@@ -439,23 +426,21 @@ def goAlamus():
 ##--------------------------------------##
 
 ##-----------LOOP-----------##
-checkForArduino()
-print "Arduino OK..."
-while 1:
-	testImage()
-	res = milk()
-	if(res):
-		print "WE ARE UNDER THE MOTHERFUCKING COW"
-	else:
-		print "I FUCKED UP"
+# checkForArduino()
+# print "Arduino OK..."
+# while 1:
+# 	testImage()
+# 	res = milk()
+# 	if(res):
+# 		print "WE ARE UNDER THE MOTHERFUCKING COW"
+# 	else:
+# 		print "I FUCKED UP"
 	# takePicture()
 	# testImage()
 	# cv2.imshow('frame',mainFrame)
 	# cv2.waitKey(0)
-
-
-
-
+while 1:
+	print isThereACow()
 ##--------------------------##
 
 ##-----------Final Instructions-----------##

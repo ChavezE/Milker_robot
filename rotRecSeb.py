@@ -66,50 +66,70 @@ def analizeEnviroment():
 			if cowFound:
 				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
 				if go:
-					center2center(go,lL,lR,lT,theta)
+					center2center(lL,lR,lT,theta)
 					break
 			else:
 				# No cow found
 				pass
 			# 2nd opportunity to find the cow
-			turnBot("-45") 
-			cowFound, cowTissue = isThereACow()
-			if cowFound == 1:
-				return True
+			turnBot("-45")
+			cowFound, cowTissue = isThereACow() 
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					center2center(lL,lR,lT,theta)
+					break
+			else:
+				pass
 			# 3rd opportunity to find the cow
 			turnBot("-45") 
-			cowFound = isThereACow()
-			if cowFound == 1:
-				return True
-			elif cowFound == 2:
-			# Rob must avoid the cow 
-				return False
+			cowFound, cowTissue = isThereACow() 
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					center2center(lL,lR,lT,theta)
+					break
+				# else:
+					# avoidCow(lT)
+			else:
+				pass
 		else:
 		# Rob is in a corner
-
+			# 1st opportunity to find the cow
 			turnBot("45") 
-			cowFound = isThereACow()
+			cowFound, cowTissue = isThereACow() 
 			if cowFound:
-				break
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					center2center(lL,lR,lT,theta)
+					break
+			else:
+				pass
+			# 2nd opportunity to find the cow
 			turnBot("-45") 
-			cowFound = isThereACow()
+			cowFound, cowTissue = isThereACow() 
 			if cowFound:
-				break
-			checkCorner = False
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					center2center(lL,lR,lT,theta)
+					break
+				# else:
+					# avoidCow(lT)
+			else:
+				pass
 		
-
 		res = moveBot("forward")
 		if res == "0":
-		# Rob has't arrived to the wall
-			pass 
-		elif res == "-1":
-		# Something went wrong 
+			# Rob has't arrived to the wall
 			pass 
 		elif res == "1":
-		# Rob is in the corner
+			# Rob is in the corner
 			checkCorner = True
 			turnBot("right")
 			headingWall = updateDirection(headingWall) 
+		elif res == "-1":
+			# Something went wrong 
+			pass 
 	
 def findTank():
 	good = takePicture()
@@ -438,12 +458,12 @@ def goAlamus():
 
 ##-----------LOOP-----------##
 cowFound, cowTissue = isThereACow()
-	if cowFound:
-		print "Cow Found"
-		go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-		if go:
-			print "Trying to milk..."
-			center2center(lL,lR,lT,theta)
+if cowFound:
+	print "Cow Found"
+	go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+	if go:
+		print "Trying to milk..."
+		center2center(lL,lR,lT,theta)
 ##--------------------------##
 
 ##-----------Final Instructions-----------##

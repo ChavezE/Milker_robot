@@ -59,8 +59,11 @@ void setup(){
 }
 
 void loop(){
+  unsigned long int clk = millis();
   Serial.print("sharpFL: ");
   Serial.print(sharp1.distance());
+  Serial.print("  TIME:");
+  Serial.println(millis() - clk);
   Serial.print("\tsharpFR: ");
   Serial.print(sharp2.distance());
   Serial.print("\tsharpRT: ");
@@ -75,7 +78,7 @@ void loop(){
   Serial.print(sharp7.distance());
   Serial.print("\tsharpLB: ");
   Serial.println(sharp8.distance());
-  if(millis() > 8000)
+  if(millis() > 800000)
   {
     M1->run(FORWARD);
     M2->run(FORWARD);

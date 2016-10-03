@@ -13,7 +13,7 @@
 // MRB: Right Back
 // MLB: Left Back
 
-//--------------------- Libraries -------------------------//
+//--------------------- Libraries --------------------------//
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
 #include "utility/Adafruit_MS_PWMServoDriver.h"
@@ -22,8 +22,9 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 #include <SharpIR.h>
+#include <NewPing.h>
 
-//--------------------- Pins ------------------------------//
+//--------------------- Pins -------------------------------//
 const uint8_t sharpFL = A15;  // sharpFrontLeft
 const uint8_t sharpFR = A14;  // sharpFrontRight
 const uint8_t sharpRT = A12;  // sharpRightTop
@@ -33,21 +34,27 @@ const uint8_t sharpBR = A8;   // sharpBackRight
 const uint8_t sharpLT = A11;  // sharpLeftTop
 const uint8_t sharpLB = A10;  // sharpLeftBottom
 
+const uint8_t ultrasonicGT = 44; // ultrasonicGripperTrigger
+const uint8_t ultrasonicGE = 43; // ultrasonicGripperEcho
+
 const uint8_t encoderF = 18;  // encoderFront
 const uint8_t encoderB = 19;  // encoderBack
 
-//--------------------- Motors ----------------------------//
+//--------------------- Motors -----------------------------//
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_DCMotor *MLB = AFMS.getMotor(1);
 Adafruit_DCMotor *MRB = AFMS.getMotor(2);
 Adafruit_DCMotor *MRF = AFMS.getMotor(3);
 Adafruit_DCMotor *MLF = AFMS.getMotor(4);
 
-//--------------------- LCD -------------------------------//
+//--------------------- LCD --------------------------------//
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-//--------------------- IMU -------------------------------//
+//--------------------- IMU --------------------------------//
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
+
+//--------------------- Ultrasonic -------------------------//
+NewPing distGripper(ultrasonicGT, ultrasonicGE, 200);
 
 //--------------------- Sharps -----------------------------//
 SharpIR distFL(sharpFL, 25, 93, 2016);
@@ -69,12 +76,57 @@ const float kp = 2.5;
 volatile unsigned int stepsF = 0; // stepsFront
 volatile unsigned int stepsB = 0; // stepsBack
 
-byte rightMotorSpeed = 120;
-byte leftMotorSpeed = 120;
+byte rightMotorSpeed = 80;
+byte leftMotorSpeed = 80;
 
 unsigned long clk;  //used to measure time
 
 //--------------------- Control movements -----------------//
+void moveForwardStraight(float ePos, float iLim, float oLim)
+{
+  if(millis() - clk >= 200)
+  {
+    float oPos = getOrientation();
+    int angleNeeded = ePos - oPos;
+    byte operation;
+    if(angleNeeded > 180)
+    {
+      operation = (360-ePos+oPos) * kp;
+      rightMotorSpeed = rightMotorSpeed + operation >= 130 ? 130 : rightMotorSpeed + operation;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+    else if(angleNeeded > 0)
+    {
+      operation = (angleNeeded) * kp;
+      rightMotorSpeed = rightMotorSpeed - operation <= 60 ? 60 : rightMotorSpeed - operation;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+    else if(angleNeeded > -180)
+    {
+      operation = (-angleNeeded) * kp;
+      rightMotorSpeed = rightMotorSpeed + operation >= 130 ? 130 : rightMotorSpeed + operation;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+    else
+    {
+      operation = (360-oPos+ePos) * kp;
+      rightMotorSpeed = rightMotorSpeed - operation <= 60 ? 60 : rightMotorSpeed - operation;
+      MRB->setSpeed(rightMotorSpeed);
+      MRF->setSpeed(rightMotorSpeed);
+    }
+
+    clk = millis();
+  }
+
+  MLB->run(FORWARD);
+  MRB->run(FORWARD);
+  MRF->run(FORWARD);
+  MLF->run(FORWARD);
+}
+
 String moveForward(int distance)
 {
   stepsF = 0;
@@ -94,47 +146,7 @@ String moveForward(int distance)
   lcd.print(distanceFL);
   while(stepsF < distance*stepsPerCm && distanceFR > wallDistance && distanceFL > wallDistance)
   {
-    if(millis() - clk >= 200)
-    {
-      float oPos = getOrientation();
-      int angleNeeded = ePos - oPos;
-      byte operation;
-      if(angleNeeded > 180)
-      {
-        operation = (360-ePos+oPos) * kp;
-        rightMotorSpeed = rightMotorSpeed + operation >= 150 ? 150 : rightMotorSpeed + operation;
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-      }
-      else if(angleNeeded > 0)
-      {
-        operation = (angleNeeded) * kp;
-        rightMotorSpeed = rightMotorSpeed - operation <= 80 ? 80 : rightMotorSpeed - operation;
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-      }
-      else if(angleNeeded > -180)
-      {
-        operation = (-angleNeeded) * kp;
-        rightMotorSpeed = rightMotorSpeed + operation >= 150 ? 150 : rightMotorSpeed + operation;
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-      }
-      else
-      {
-        operation = (360-oPos+ePos) * kp;
-        rightMotorSpeed = rightMotorSpeed - operation <= 80 ? 80 : rightMotorSpeed - operation;
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-      }
-
-      clk = millis();
-    }
-
-    MLB->run(FORWARD);
-    MRB->run(FORWARD);
-    MRF->run(FORWARD);
-    MLF->run(FORWARD);
+    moveForwardStraight(ePos, iLim, oLim);
 
     distanceFR = distFR.distance();
     distanceFL = distFL.distance();
@@ -351,10 +363,6 @@ void setup() {
   delay(500);
   lcd.clear();
 
-<<<<<<< HEAD
-=======
-  
->>>>>>> origin/master
   // waiting for Raspberry to boot
   while(Serial.available() <= 0)
   {
@@ -366,10 +374,6 @@ void setup() {
   lcd.print("Rasp: OK");
   delay(500);
   lcd.clear();
-<<<<<<< HEAD
-=======
-  
->>>>>>> origin/master
 }
 
 //--------------------- Main program ----------------------//
@@ -393,6 +397,50 @@ void loop() {
 
       // 2.- Find terrine
       case 2:
+      {
+        float ePos = getOrientation();
+        float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
+        float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
+        clk = millis();
+
+        float distanceFR = distFR.distance();
+        float distanceFL = distFL.distance();
+        float distanceGripper = distGripper.ping_cm();
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("FR:");
+        lcd.print(distanceFR);
+        lcd.setCursor(0,1);
+        lcd.print("FL:");
+        lcd.print(distanceFL);
+        lcd.setCursor(8,0);
+        lcd.print("Gr:");
+        lcd.print(distanceGripper);
+        while(distanceGripper > wallDistance && distanceFR > wallDistance && distanceFL > wallDistance)
+        {
+          moveForwardStraight(ePos, iLim, oLim);
+
+          distanceFR = distFR.distance();
+          distanceFL = distFL.distance();
+          distanceGripper = distGripper.ping_cm();
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("FR:");
+          lcd.print(distanceFR);
+          lcd.setCursor(0,1);
+          lcd.print("FL:");
+          lcd.print(distanceFL);
+          lcd.setCursor(8,0);
+          lcd.print("Gr:");
+          lcd.print(distanceGripper);
+        }
+        stopMotors();
+        if(distanceGripper > wallDistance)
+          return "0";
+        if(distFR.distance() <= wallDistance + 3 && distFL.distance() <= wallDistance + 3)
+          return "1";
+        return "-1";
+      }
       break;
 
       // 3.- Grab terrine
@@ -457,38 +505,73 @@ void loop() {
         bool legLBDetected = false;
         bool legRTDetected = false;
         bool legRBDetected = false;
-        while(!(legLTDetected && legLBDetected && legRTDetected && legRBDetected) && distFL.distance() > wallDistance && distFR.distance() > wallDistance)
+        while(!(legLTDetected && legLBDetected && legRTDetected && legRBDetected) && distFL.distance() > wallDistance + 5 && distFR.distance() > wallDistance + 5)
         {
-          legLTDetected = distLT.distance() > wallDistance ? legLTDetected : true;
-          legRTDetected = distRT.distance() > wallDistance ? legRTDetected : true;
-          MLB->run(FORWARD);
-          MRB->run(FORWARD);
-          MRF->run(FORWARD);
-          MLF->run(FORWARD);
-          if(!legLTDetected && legRTDetected)
+          clk = millis();
+          if(!legLTDetected && !legRTDetected)
+          {
+            MLB->run(FORWARD);
+            MRB->run(FORWARD);
+            MRF->run(FORWARD);
+            MLF->run(FORWARD);
+            int distanceLT = distLT.distance();
+            int distanceRT = distRT.distance();
+            //Serial.print("LT: ");
+            //Serial.print(distanceLT);
+            //Serial.print("\tRT: ");
+            //Serial.println(distanceRT);
+            legLTDetected = distanceLT > wallDistance + 5 ? legLTDetected : true;
+            legRTDetected = distanceRT > wallDistance + 5 ? legRTDetected : true;
+          }
+          else if(!legLTDetected && legRTDetected)
           {
             MRB->run(BRAKE);
             MRF->run(BRAKE);
+            int distanceLT = distLT.distance();
+            int distanceRT = distRT.distance();
+            //Serial.print("LT: ");
+            //Serial.print(distanceLT);
+            //Serial.print("\tRT: ");
+            //Serial.println(distanceRT);
+            legLTDetected = distanceLT > wallDistance + 5 ? legLTDetected : true;
+            legRTDetected = distanceRT > wallDistance + 5 ? legRTDetected : true;
           }
           else if(legLTDetected && !legRTDetected)
           {
             MLB->run(BRAKE);
             MLF->run(BRAKE);
+            int distanceLT = distLT.distance();
+            int distanceRT = distRT.distance();
+            //Serial.print("LT: ");
+            //Serial.print(distanceLT);
+            //Serial.print("\tRT: ");
+            //Serial.println(distanceRT);
+            legLTDetected = distanceLT > wallDistance + 5 ? legLTDetected : true;
+            legRTDetected = distanceRT > wallDistance + 5 ? legRTDetected : true;
           }
           else if(legLTDetected && legRTDetected)
           {
-            legLBDetected = distLB.distance() > wallDistance ? legLBDetected : true;
-            legRBDetected = distRB.distance() > wallDistance ? legRBDetected : true;
             MLB->run(FORWARD);
             MRB->run(FORWARD);
             MRF->run(FORWARD);
             MLF->run(FORWARD);
+            int distanceLB = distLB.distance();
+            int distanceRB = distRB.distance();
+            //Serial.print("LB: ");
+            //Serial.print(distanceLB);
+            //Serial.print("\tRB: ");
+            //Serial.println(distanceRB);
+            legLBDetected = distanceLB > wallDistance + 5 ? legLBDetected : true;
+            legRBDetected = distanceRB > wallDistance + 5 ? legRBDetected : true;
           }
+          //Serial.print("TIME: ");
+          //Serial.println(millis() - clk);
         }
         stopMotors();
-        if(distFL.distance() <= wallDistance || distFR.distance() <= wallDistance)
+        if(distFL.distance() <= wallDistance + 5 || distFR.distance() <= wallDistance + 5)
           Serial.print("-1");
-        Serial.print("0");
+        else
+          Serial.print("0");
       }
       break;
 

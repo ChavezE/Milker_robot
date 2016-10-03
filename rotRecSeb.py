@@ -36,17 +36,18 @@ mainFrame = []	# Initialize global variable for image
 cap = cv2.VideoCapture(0)
 # Check that the connection with the camera is open
 if not cap.isOpened():
-	cap.release()
-	raise IOError("Cannot open webcam")
+	cap.open()
+	# cap.release()
+	# raise IOError("Cannot open webcam")
 		
-# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
+arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 ##---------------------------##
 
 
 ##-----------MAIN FUNCTIONS-----------##
 def takePicture():
 	global mainFrame
-	for i in range(5):
+	for i in range(4):
 		cap.grab()
 	goodFrm, mainFrame = cap.read()
 
@@ -61,6 +62,7 @@ def analizeEnviroment():
 		#print "Turn Right"
 		if checkCorner == False:
 			# 1st opportunity to find the cow
+
 			turnBot("right")
 			cowFound, cowTissue = isThereACow()
 			if cowFound:
@@ -147,10 +149,10 @@ def findTank():
 		res = cv2.bitwise_and(mainFrame,mainFrame,mask=mask)
 		res = cv2.medianBlur(res, 5)
 
-		cv2.imshow('m',mainFrame)
-		cv2.imshow('Color Detector', res)
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
+		# cv2.imshow('m',mainFrame)
+		# cv2.imshow('Color Detector', res)
+		# cv2.waitKey(0)
+		# cv2.destroyAllWindows()
 	
 def findMaxLevel(tissue):
 	# Find the level of the tissue that has most squares. If tie, the higher.
@@ -176,8 +178,12 @@ def findMaxLevel(tissue):
 def moveTo50(x):
 	# Move Rob to be 50 cm far away from the cow
 	y = 29.69*math.exp(0.0044*x)
-	if y > 55 or y < 45:
-		moveBot(str(int(y - 50)))
+	print "y: ",y
+	print "movement", int(y-50)
+	if y > 55:
+		moveBot(str(int(y - 55)))
+	elif y < 45:
+		moveBot(str(int(y - 45)))
 	return y
 
 def center2center(left,right,top,theta):
@@ -244,12 +250,12 @@ def isCowMilkeable(tissue):
 	limLeft,limRight,limTop = calcCowLimits(listMaxLevel,tissue)
 	
 	##-------PRINTS-------
-	drawGreatestTissue(tissue)
-	drawSlope(A,B)
-	drawLimits(limLeft,limRight,limTop)
-	cv2.imshow('mF',mainFrame)
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
+	# drawGreatestTissue(tissue)
+	# drawSlope(A,B)
+	# drawLimits(limLeft,limRight,limTop)
+	# cv2.imshow('mF',mainFrame)
+	# cv2.waitKey(0)
+	# cv2.destroyAllWindows()
 	##--------------------
 	if (640 - limLeft - (640 - limRight)) < 200:
 		# There is a cow but you can't milk it
@@ -273,10 +279,10 @@ def main():
 				# findTerrine()
 				# grabTerrine()
 				analizeEnviroment()	# Search for the motherfucker cow
-
-				if(milk()):
-					goAlamus()
-				time.sleep(5)
+				milk()
+				# if(milk()):
+				# 	goAlamus()
+				# time.sleep(5)
 ##------------------------------------##
 
 ##-----------SECONDARY FUNCTIONS-----------##
@@ -355,6 +361,7 @@ def readFromFile(fileName):
 ##-----------Arduino Interaction-----------##
 def checkForArduino():
 	# Send a 'b' to tell the Arduino the RaspberryPi is alive
+	print "Conecting with arduino"
 	ans = " "
 	start = time.time()
 	while ans != "b" and time.time() - start < 30:
@@ -457,15 +464,65 @@ def goAlamus():
 ##--------------------------------------##
 
 ##-----------LOOP-----------##
-cowFound, cowTissue = isThereACow()
-if cowFound:
-	print "Cow Found"
-	go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-	if go:
-		print "Trying to milk..."
-		center2center(lL,lR,lT,theta)
-##--------------------------##
+def mymain():
+	checkForArduino()
+	while 1:
+		cowFound, cowTissue = isThereACow()
+		if cowFound:
+			print "Cow Found"
+			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+			if go:
 
+				moveTo50(lT)
+				cowFound, cowTissue = isThereACow()
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				actCenter = (lL + lR) / 2
+				print "Act Center: ",actCenter
+				if actCenter > 320:
+					print "Moving Right..."
+					turnBot("3")
+					time.sleep(3)
+					cowFound, cowTissue = isThereACow()
+					go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+					actCenter = (lL + lR) / 2
+					print "Act Center: ",actCenter
+					while actCenter > 320:
+						turnBot("3")
+						time.sleep(3)
+						cowFound, cowTissue = isThereACow()
+						go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+						actCenter = (lL + lR) / 2
+						print "Act Center: ",actCenter
+				elif actCenter < 320:
+					print "Moving Left..."
+					turnBot("-3")
+					time.sleep(3)
+					cowFound, cowTissue = isThereACow()
+					go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+					actCenter = (lL + lR) / 2
+					print "Act Center: ",actCenter
+					while actCenter < 320:
+						turnBot("-3")
+						time.sleep(3)
+						cowFound, cowTissue = isThereACow()
+						go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+						actCenter = (lL + lR) / 2
+						print "Act Center: ",actCenter
+			arduino.flushInput()
+			arduino.flushOutput()
+			milk()
+			print arduino.read(arduino.inWaiting())
+			print "Cow centered!"
+		time.sleep(10)
+
+			# print "Theta: ",theta
+			# if go:
+			# 	print "Trying to milk..."
+			# 	center2center(lL,lR,lT,theta)
+			# 	milk()
+##-------------------------##
+mymain()
+# main()
 ##-----------Final Instructions-----------##
 cap.release()
 ##----------------------------------------##

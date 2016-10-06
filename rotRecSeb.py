@@ -316,16 +316,21 @@ def isCowMilkeable(tissue):
 	# 		if theta > 0 and theta < 10:
 
 def main():
+
 	if(checkForArduino()):
-		while (1):
-			if(confirmTerrineZone()):	
-				# findTerrine()
-				# grabTerrine()
-				analizeEnviroment()	
-				milk()
-				# if(milk()):
-				# 	goAlamus()
-				# time.sleep(5)
+		sM = startMode('begin.txt')
+		if sM == '1':
+			while (1):
+				if(confirmTerrineZone()):	
+					# findTerrine()
+					# grabTerrine()
+					analizeEnviroment()	
+					milk()
+					# if(milk()):
+					# 	goAlamus()
+					# time.sleep(5)
+		else:
+			# locateInField()
 ##------------------------------------##
 
 ##-----------SECONDARY FUNCTIONS-----------##
@@ -392,13 +397,14 @@ def drawLimits(left,right,y):
 	cv2.putText(mainFrame,("diff R: " + str(640-right)),(30,50), font, 0.8,(0,0,255),1,cv2.LINE_AA)
 	cv2.putText(mainFrame,("diff Top: " + str(y)),(30,80), font, 0.8,(0,0,255),1,cv2.LINE_AA)
 
-def readFromFile(fileName):
-	num = open('begin.txt','r').read()
-	print num
-	num = str(1+int(num))
-	file = open('begin.txt','w')
-	file.write(num)
+def startMode(fileName):
+	file = open(fileName,'r')
+	num = file.read()
 	file.close()
+	file = open(fileName,'w')
+	file.write(str(int(num) + 1))
+	file.close()
+	return num
 
 def centerOfCow(l,r):
 	return (l+r)/2

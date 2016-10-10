@@ -139,12 +139,13 @@ def clearImage(imgOriginal):
    # imgOriginal[480*0.65:480,0:640] = [255,255,255]
    imGray = cv2.cvtColor(imgOriginal, cv2.COLOR_BGR2GRAY)
    imGray = cv2.GaussianBlur(imGray, (3,3), 2)
+   # imGray = cv2.fastNlMeansDenoisingColored(imgOriginal,None,10,10,7,21)
 
    return imGray
 
-def doThresHold(filteredImage,tVal):
+def doThresHold(filteredImage,tVal,k,i):
    _, thres1 = cv2.threshold(filteredImage,tVal,255,cv2.THRESH_BINARY_INV)
-   thres1 = cv2.erode(thres1,np.ones((3,3),np.uint8), iterations=4)
+   thres1 = cv2.erode(thres1,np.ones((k,k),np.uint8), iterations=i)
    
    return thres1
 
@@ -153,10 +154,9 @@ def findContours(img):
    # Recieves the image as a parameter.
    _, contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, 
       cv2.CHAIN_APPROX_SIMPLE)
-
    return contours
 
-def getGoodSquares(contours,imgOriginal):
+def getGoodSquares(contours,imgOriginal,thres):
    # Processes the contours found in order to find squares in the image
 
    # ----VARIABLES----
@@ -171,13 +171,17 @@ def getGoodSquares(contours,imgOriginal):
       rect_area = w * h
       if(rect_area > 0): # sometimes this value is found
          extent = float(area / rect_area)
-         if (extent >= 0.7 and area >= 100 and area <= 4000):   # tolerance
+         if (extent >= 0.75 and area >= 400 and area <= 12500):   # tolerance
             x,y,w,h = cv2.boundingRect(cnt)
-            tempCowSquare = cowSquare(x,y,w,h,area)    # Create an objet from the 'cowSquare' class
-            cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list  
+            if thres[y + h*0.5,x + w*0.5] == 1 and w/h > 0.1:
+               tempCowSquare = cowSquare(x,y,w,h,area)    # Create an objet from the 'cowSquare' class
+               cowSquares.append(tempCowSquare) # Insert object 'cowSquare' into a list  
 
    # Print elements in cowSqrs
-   # printCowSquares(imgOriginal,255,255,255,cowSquares)
+   # b = int ( random.uniform(50,255))
+   # g = int ( random.uniform(50,255))
+   # r = int ( random.uniform(50,255))
+   # printCowSquares(imgOriginal,b,g,r,cowSquares)
                                        
    return cowSquares
 
@@ -193,7 +197,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          compareCoord = cowSquare.getBotRightC()   # use the corner of interest depending on the attribute 'checkWith'
 
          # Find the distance between the two corners in order to find adjacent ones
-         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon and compareCoord[1] - 30 <= corner[1]):
             cowSquare.setLevel(curLevel + 1)   # Set the level of the square
             tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
@@ -212,7 +216,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          compareCoord = cowSquare.getBotLeftC()
 
          # Find the distance between the two corners in order to find adjacent ones
-         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon and compareCoord[1] - 30<= corner[1]):
             cowSquare.setLevel(curLevel + 1)   # Set the level of the square
             tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
@@ -231,7 +235,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          compareCoord = cowSquare.getTopRightC()
 
          # Find the distance between the two corners in order to find adjacent ones
-         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon and compareCoord[1] + 30 >= corner[1]):
             cowSquare.setLevel(curLevel - 1)   # Set the level of the square
             tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
@@ -250,7 +254,7 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          compareCoord = cowSquare.getTopLeftC()
 
          # Find the distance between the two corners in order to find adjacent ones
-         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon):
+         if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon and compareCoord[1] + 30 >= corner[1]):
             cowSquare.setLevel(curLevel - 1)   # Set the level of the square
             tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
             found = True
@@ -280,24 +284,24 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
          tissue[:] = []
 
       greatestTissue = sorted(greatestTissue, key=lambda x:x.getLevel(), reverse=False)
-      iA = 0
+      # iA = 0
       # Remove those squares who are unique at a specific level
-      while iA < len(greatestTissue) and len(greatestTissue) > 1:
-         if(iA == len(greatestTissue) - 1):
-            if(greatestTissue[iA-1].getLevel() != greatestTissue[iA].getLevel()):
-               greatestTissue.pop(iA)
-            else:
-               iA += 1
-         elif(iA == 0):
-            if(greatestTissue[iA+1].getLevel() != greatestTissue[iA].getLevel()):
-               greatestTissue.pop(iA)
-            else:
-               iA += 1
-         else:
-            if(greatestTissue[iA-1].getLevel() != greatestTissue[iA].getLevel() and greatestTissue[iA+1].getLevel() != greatestTissue[iA].getLevel()):
-               greatestTissue.pop(iA)
-            else:
-               iA += 1
+      # while iA < len(greatestTissue) and len(greatestTissue) > 1:
+      #    if(iA == len(greatestTissue) - 1):
+      #       if(greatestTissue[iA-1].getLevel() != greatestTissue[iA].getLevel()):
+      #          greatestTissue.pop(iA)
+      #       else:
+      #          iA += 1
+      #    elif(iA == 0):
+      #       if(greatestTissue[iA+1].getLevel() != greatestTissue[iA].getLevel()):
+      #          greatestTissue.pop(iA)
+      #       else:
+      #          iA += 1
+      #    else:
+      #       if(greatestTissue[iA-1].getLevel() != greatestTissue[iA].getLevel() and greatestTissue[iA+1].getLevel() != greatestTissue[iA].getLevel()):
+      #          greatestTissue.pop(iA)
+      #       else:
+      #          iA += 1
          
       return greatestTissue
 
@@ -352,6 +356,7 @@ def printCowSquares(imgOriginal,G,B,R,sqrs):
       w = sqr.getW()
       h = sqr.getH()
       cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
+   cv2.imshow('m',imgOriginal) 
 
 def findClusters(cowRectangles,iterations,coordClusters):
    # This function is to implement the clustering algorithm 

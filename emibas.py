@@ -845,79 +845,109 @@ def analizeEnviroment():
 	checkCorner = False
 	cowFound = False
 	row = 1
-	
-	#	* This subproces is to turn up the camera agle
 	subprocess.Popen([UVCDYNCTRLEXEC,"-s","Tilt Reset","--","1"])
 	subprocess.Popen([UVCDYNCTRLEXEC,"-s","Tilt (relative)","--","-1250"])
-
-	'''
-		At thistime we must have the terrine grabed and we should be pointing North
-		we will seek the cow for ever.
-	'''
 	while 1:
 		#print "Beginning to anaEnv"
 		#print "Turn Right"
 		# Rob is in the first row
+		if checkCorner == False and row == 1:
+			# 1st opportunity to find the cow
+			turnBot("right")
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				# print "Cow Found"
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
 
-		# 1st opportunity to find the cow
-		turnBot("right")
-		cowFound, cowTissue = isThereACowRecife(-1)
-		if cowFound:
-			# print "Cow Found"
-			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-			if go:
-				prepareToMilk(lL,lR,lT,theta)
-				break
+			# 2nd opportunity to find the cow
+			turnBot("-45")
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
 
-		# 2nd opportunity to find the cow
-		turnBot("-30")
-		cowFound, cowTissue = isThereACowRecife(-1)
-		if cowFound:
-			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-			if go:
-				prepareToMilk(lL,lR,lT,theta)
-				break
+			# 3rd opportunity to find the cow
+			turnBot("-45") 
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
+		elif checkCorner == False and row == 2:
+			# 1st opportunity to find the cow
+			turnBot("left")
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				# print "Cow Found"
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
 
-		# 3rd opportunity to find the cow
-		turnBot("-30") 
-		cowFound, cowTissue = isThereACowRecife(-1)
-		if cowFound:
-			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-			if go:
-				prepareToMilk(lL,lR,lT,theta)
-				break
+			# 2nd opportunity to find the cow
+			turnBot("45")
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
 
-		# 4th opportunity to find the cow
-		turnBot("-30") 
-		cowFound, cowTissue = isThereACowRecife(-1)
-		if cowFound:
-			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-			if go:
-				prepareToMilk(lL,lR,lT,theta)
-				break
+			# 3rd opportunity to find the cow
+			turnBot("45") 
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
+		# Rob is in a corner
+		else:
+			# 1st opportunity to find the cow
+			turnBot("45") 
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
 
-		''' Cow not found, so we must continue traversing the arena '''
+			# 2nd opportunity to find the cow
+			turnBot("-45") 
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
+			checkCorner = False
+
+			res = moveBot("forward")
+			turnBot("right")
+
+			if row == 1:
+				row == 2
+			elif row == 2:
+				row = 1
 
 		res = moveBot("forward")
 		if res == "0":
 			# Rob has't arrived to the wall
 			pass 
 		elif res == "1":
-			# Both sensors have reached distance
-			# Rob is in the corner... or not...
-			# checkCorner = True
+			# Rob is in the corner
+			checkCorner = True
 			turnBot("right")
-			moveBot("forward")
 			headingWall = updateDirection(headingWall) 
 		elif res == "-1":
-			# Something went wrong, distance not reached 
-			# turn robot one row further and keep looking
-			# change directions and look in other way
-			# or skip cow
-			#			#####		TO DO #####
-			#					*******			
-			row = row + 1 
-			#					*******
+			# Something went wrong 
+			break
 	
 def prepareToMilk(limL,limR,limT,t):
 	moveTo50(limT)
@@ -1423,8 +1453,7 @@ def checkForArduino():
 		# Arduino was already initialized
 		return True
 
-def confirmTerrineZone(): # *********CHECK THIS**********
-
+def confirmTerrineZone():
 	# This function is for the 1st case of the Arduino. The position of the terrines 
 	# should detect a wall with the left and back distance sensors.
 
@@ -1486,7 +1515,6 @@ def milk():
 		# Something went wrong
 		return False
 
-
 def goAlamus():
 	# After we milked cow, it's time to go to the gate
 	arduino.write("9")
@@ -1501,25 +1529,19 @@ def goAlamus():
 		pass
 	res = arduino.read(1)
 	if res == "0":
-		arduino.write("B")
+		arduino.write("11")
 	else:
 	# Something went wrong
 		pass
 ##--------------------------------------##
 
 ##-----------LOOP-----------##
-def myMain():
-	if(checkForArduino()):
-		while (1):
-			if(confirmTerrineZone() == "0"):	
-				findTerrine()
-				grabTerrine()
-				analizeEnviroment()	
-				ans = milk()
-				if(milk()):
-				 	goAlamus()
-				 	
-				# time.sleep(5)
+def mymain():
+	bT,tis = isThereACowRecife(-1)
+	print bT
+	cv2.imshow('m',mainFrame)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
 ##-------------------------##
 mymain()
 ##-----------Final Instructions-----------##

@@ -170,7 +170,7 @@ def analizeEnviroment():
 	
 def prepareToMilk(limL,limR,limT,t):
 	moveTo50(limT)
-	cowFound, cowTissue = isThereACow(0)
+	cowFound, cowTissue = isThereACow(-1)
 	go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
 	actCenter = centerOfCow(lL,lR)
 	# print "Act Center: ",actCenter
@@ -280,12 +280,12 @@ def center2center(left,right,top,theta):
 			moveBot(str(correction))
 			turnBot(str(90))
 
-def calcCowLimits(maxLvl,tissue):
+def calcCowLimits(maxLvl):
 	maxLvl = sorted(maxLvl, key=lambda x:x.getX(), reverse = False)
 	limitRight = maxLvl[len(maxLvl)-1].getTopRightC()[0]
 	limitLeft = maxLvl[0].getX()
-	tissue = sorted(tissue, key=lambda x:x.getY(), reverse = False)
-	topY = tissue[0].getY()
+	maxLvl = sorted(maxLvl, key=lambda x:x.getY(), reverse = False)
+	topY = maxLvl[0].getY()
 	return limitLeft, limitRight, topY
 
 def isThereACow(flag):
@@ -340,9 +340,8 @@ def isThereACowRecife(flag):
 	global mainFrame
 	global binValue
 	maxLenT = [] # maximumLenghtTissue
-	cowRecCopy = []
 	allSquares = [] # Store, in each iteration of the binarization, the squares found in the image
-	minNumSquares = 2
+	minNumSquares = 4
 	# mainFrame = cv2.imread('/home/pi/pruebasVision/FotosVaca/img2.jpg') 
 	gF = True
 	gF = takePicture() # returns boolean to know if the picture is OK
@@ -351,20 +350,20 @@ def isThereACowRecife(flag):
 		equalizedFrame = cv2.equalizeHist(filteredFrame)
 		if flag == -1:
 			# FOR: search for the best threshold value
-			print time.time()
 			for binValueT in range(10,160,5):
-				cp1 = cp2 = cp3 = deepcopy(equalizedFrame)
-				thresFrame = rb.doThresHold(cp1, binValueT, 7,1) 
-				contours = rb.findContours(thresFrame) 
-				cowRectangles = rb.getGoodSquares(contours,mainFrame,thresFrame) 
-				findEquals(allSquares,cowRectangles,15)
+				cp0 = cp1 = cp2 = deepcopy(equalizedFrame)
 
-				thresFrame1 = rb.doThresHold(cp2, binValueT,3,3) # Thresholds the image and erodes it
+				thresFrame0 = rb.doThresHold(cp0, binValueT,7,1) 
+				contours0 = rb.findContours(thresFrame0) 
+				cowRectangles0 = rb.getGoodSquares(contours0,mainFrame,thresFrame0) 
+				findEquals(allSquares,cowRectangles0,15)
+
+				thresFrame1 = rb.doThresHold(cp1, binValueT,3,3) # Thresholds the image and erodes it
 				contours1 = rb.findContours(thresFrame1) # Finds all the contours inside the image
 				cowRectangles1 = rb.getGoodSquares(contours1,mainFrame,thresFrame1) # From contours, extract possile cow squares
 				findEquals(allSquares,cowRectangles1,15)
 
-				thresFrame2 = rb.doThresHold(cp3, binValueT,5,2) 
+				thresFrame2 = rb.doThresHold(cp2, binValueT,5,2) 
 				contours2 = rb.findContours(thresFrame2) 
 				cowRectangles2 = rb.getGoodSquares(contours2,mainFrame,thresFrame2) 
 				findEquals(allSquares,cowRectangles2,15)
@@ -373,17 +372,16 @@ def isThereACowRecife(flag):
 				del cp2
 				del cp3
 			#-------END FOR------
-			print time.time()
-			for c in allSquares:
-				cv2.rectangle(mainFrame,(c.getX(),c.getY()),(c.getX()+c.getW(),c.getY()+c.getH()),(255,255,255),4)
+			# for c in allSquares:
+			# 	cv2.rectangle(mainFrame,(c.getX(),c.getY()),(c.getX()+c.getW(),c.getY()+c.getH()),(255,255,255),4)
 			# When there are more than 'minNumSquares', it can be found at least one tissue
 			if len(allSquares) > minNumSquares:
-				greatestTissue = rb.makeTissue(allSquares,[],40,0,[0,0],0)
-				drawGreatestTissue(greatestTissue)
+				maxLenT = rb.makeTissue(allSquares,[],50,0,[0,0],0)
+				# drawGreatestTissue(greatestTissue)
 				if len(greatestTissue) > minNumSquares:
-					return True, allSquares
+					return True, greatestTissue
 				else:
-					return False, allSquares
+					return False, greatestTissue
 
 		elif flag == 0:
 			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
@@ -480,9 +478,36 @@ def centerToTank(tank):
 def isCowMilkeable(tissue):
 	# INPUT: maximunLengthTissue found in isThereACow
 	# OUTPUT : bool to go and milk the cow, limLeft, limRight, limTop
-	listMaxLevel = findMaxLevel(tissue)
-	theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
-	limLeft,limRight,limTop = calcCowLimits(listMaxLevel,tissue)
+	tissue = sorted(tissue, key=lambda x:x.getLevel(), reverse=True)
+	if tissue[0].getLevel() != tissue[1].getLevel() and tissue[1].getLevel() == tissue[2].getLevel():
+		# To remove any noise that is higher than the cow
+		tissue[0].pop(0)
+		if len(tissue) < 5:
+			return False,0,0,0,0
+
+	if tissue[0].getLevel() == tissue[1].getLevel() and tissue[1].getLevel() == tissue[2].getLevel():
+		if (tissue[3].getLevel() == tissue[4].getLevel()):
+			# The tissue has the 6 rectangles of the cow
+			tempLevel = [tissue[0],tissue[1],tissue[2]]
+			limLeft,limRight,limTop = calcCowLimits(tempLevel)
+			limLeft -= tissue[0].getW()
+			return True,limLeft,limRight,limTop,0
+	elif tissue[0].getLevel() == tissue[1].getLevel():
+		if tissue[2].getLevel() == tissue[3].getLevel() and tissue[3].getLevel() == tissue[4].getLevel():
+			tempLevel = [tissue[2],tissue[3],tissue[4]]
+			limLeft,limRight,_ = calcCowLimits(tempLevel)
+			limRight += tissue[4].getW()
+			if tissue[0].getY() < tissue[1].getY():
+				limTop = tissue[0].getY()
+			else:
+				limTop = tissue[1].getY()
+			return True,limLeft,limRight,limTop,0
+	else: 
+		return False,0,0,0,0
+
+	# listMaxLevel = findMaxLevel(tissue)
+	# theta,A,B = rb.ajusteDeCurvas(listMaxLevel)
+	# limLeft,limRight,limTop = calcCowLimits(listMaxLevel,tissue)
 	
 	##-------PRINTS-------
 	# drawGreatestTissue(tissue)
@@ -492,12 +517,12 @@ def isCowMilkeable(tissue):
 	# cv2.waitKey(0)
 	# cv2.destroyAllWindows()
 	##--------------------
-	if (640 - limLeft - (640 - limRight)) < 200:
-		# There is a cow but you can't milk it
-		return False,limLeft,limRight,limTop,theta
-	else:
-		# Go milk the cow
-		return True,limLeft,limRight,limTop,theta
+	# if (640 - limLeft - (640 - limRight)) < 200:
+	# 	# There is a cow but you can't milk it
+	# 	return False,limLeft,limRight,limTop,theta
+	# else:
+	# 	# Go milk the cow
+	# 	return True,limLeft,limRight,limTop,theta
 
 # def huntingCow(theta, maxLevel):
 	# maxLevel = sorted(maxLevel, key=lambda x:x.getX(), reverse=False)

@@ -524,6 +524,15 @@ def isCowMilkeable(tissue):
 	# 	# Go milk the cow
 	# 	return True,limLeft,limRight,limTop,theta
 
+def startMode(fileName):
+	file = open(fileName,'r')
+	num = file.read()
+	file.close()
+	file = open(fileName,'w')
+	file.write(str(int(num) + 1))
+	file.close()
+	return num
+
 # def huntingCow(theta, maxLevel):
 	# maxLevel = sorted(maxLevel, key=lambda x:x.getX(), reverse=False)
 	# xLeft = maxLevel[0]

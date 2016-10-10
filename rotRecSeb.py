@@ -25,23 +25,26 @@ import LARC1 as rb
 import random
 import serial
 import statistics
+import gtk
+import subprocess
+from copy import deepcopy
 ##-------------------------------##
 
 ##-----------GLOBAL VARIABLES-----------##
 binValue = 70
 headingWall = "N"	# GLOBAL DIRECTION VARIABLE
 mainFrame = []	# Initialize global variable for image
+UVCDYNCTRLEXEC = "/usr/bin/uvcdynctrl"
 ##--------------------------------------##
 
 ##-----------SETUP-----------##
 cap = cv2.VideoCapture(0)
 # Check that the connection with the camera is open
 if not cap.isOpened():
-	cap.open()
-	# cap.release()
-	# raise IOError("Cannot open webcam")
+	cap.release()
+	raise IOError("Cannot open webcam")
 		
-arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
+# arduino = serial.Serial('/dev/ttyACM0',9600, timeout = 1)
 ##---------------------------##
 
 
@@ -60,10 +63,14 @@ def analizeEnviroment():
 	global headingWall
 	checkCorner = False
 	cowFound = False
+	row = 1
+	subprocess.Popen([UVCDYNCTRLEXEC,"-s","Tilt Reset","--","1"])
+	subprocess.Popen([UVCDYNCTRLEXEC,"-s","Tilt (relative)","--","-1250"])
 	while 1:
 		#print "Beginning to anaEnv"
 		#print "Turn Right"
-		if checkCorner == False:
+		# Rob is in the first row
+		if checkCorner == False and row == 1:
 			# 1st opportunity to find the cow
 			turnBot("right")
 			cowFound, cowTissue = isThereACow(-1)
@@ -91,7 +98,34 @@ def analizeEnviroment():
 				if go:
 					prepareToMilk(lL,lR,lT,theta)
 					break
+		elif checkCorner == False and row == 2:
+			# 1st opportunity to find the cow
+			turnBot("left")
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				# print "Cow Found"
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
 
+			# 2nd opportunity to find the cow
+			turnBot("45")
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
+
+			# 3rd opportunity to find the cow
+			turnBot("45") 
+			cowFound, cowTissue = isThereACow(-1)
+			if cowFound:
+				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+				if go:
+					prepareToMilk(lL,lR,lT,theta)
+					break
 		# Rob is in a corner
 		else:
 			# 1st opportunity to find the cow
@@ -111,7 +145,16 @@ def analizeEnviroment():
 				if go:
 					prepareToMilk(lL,lR,lT,theta)
 					break
-		
+			checkCorner = False
+
+			res = moveBot("forward")
+			turnBot("right")
+
+			if row == 1:
+				row == 2
+			elif row == 2:
+				row = 1
+
 		res = moveBot("forward")
 		if res == "0":
 			# Rob has't arrived to the wall
@@ -125,45 +168,41 @@ def analizeEnviroment():
 			# Something went wrong 
 			break
 	
-def prepareToMilk():
-	moveTo50(lT)
+def prepareToMilk(limL,limR,limT,t):
+	moveTo50(limT)
 	cowFound, cowTissue = isThereACow(0)
 	go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
 	actCenter = centerOfCow(lL,lR)
 	# print "Act Center: ",actCenter
 	# Rob must turn right
 	if actCenter > 325:
-		# print "Moving Right..."
+		print "Moving Right..."
 		turnBot("3")
-		wait4ArduAnswer()
 		cowFound, cowTissue = isThereACow(0)
 		go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
 		actCenter = centerOfCow(lL,lR)
 		# print "Act Center: ",actCenter
 		while actCenter > 325:
 			turnBot("3")
-			wait4ArduAnswer()
 			cowFound, cowTissue = isThereACow(0)
 			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
 			actCenter = centerOfCow(lL,lR)
 			# print "Act Center: ",actCenter
 	elif actCenter < 315:
-		# print "Moving Left..."
+		print "Moving Left..."
 		turnBot("-3")
-		wait4ArduAnswer()
 		cowFound, cowTissue = isThereACow(0)
 		go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
 		actCenter = centerOfCow(lL,lR)
 		# print "Act Center: ",actCenter
 		while actCenter < 315:
 			turnBot("-3")
-			wait4ArduAnswer()
 			cowFound, cowTissue = isThereACow(0)
 			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
 			actCenter = centerOfCow(lL,lR)
 			# print "Act Center: ",actCenter
 	# print arduino.read(arduino.inWaiting())
-	# print "Cow centered!"
+	print "Cow centered!"
 
 def findTank():
 	good = takePicture()
@@ -253,25 +292,37 @@ def isThereACow(flag):
 	global mainFrame
 	global binValue
 	maxLenT = [] # maximumLenghtTissue
-	minNumSquares = 6
-	# mainFrame = cv2.imread('image1.jpg') 
+	cowRecCopy = []
+	minNumSquares = 2
+	# mainFrame = cv2.imread('/home/pi/pruebasVision/FotosVaca/img4.jpg') 
+	gF = True
 	gF = takePicture() # returns boolean to know if the picture is OK
 	if gF:
 		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
 		if flag == -1:
 			# FOR: search for the best threshold value
-			for binValueT in range(30,171,5):
-				thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+			for binValueT in range(30,130,3):
+				thresFrame = rb.doThresHold(filteredFrame, binValueT) # Thresholds the image and erodes it
+				# print "binval:", binValueT
+				# cv2.imshow('t',thresFrame)
+				# cv2.waitKey(0)
+				# cv2.destroyAllWindows()
 				contours = rb.findContours(thresFrame) # Finds all the contours inside the image
-				cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+				cowRectangles = rb.getGoodSquares(contours,mainFrame,thresFrame) # From contours, extract possile cow squares
 				newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse=True)
 				# When there are more than 'minNumSquares', it can be found at least one tissue
 				if len(newCowRectangles) > minNumSquares:
-					greatestTissue = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
+					cowRecCopy = deepcopy(cowRectangles)
+					greatestTissue = rb.makeTissue(newCowRectangles,[],50,0,[0,0],0)
 					if len(greatestTissue) > len(maxLenT):
 						maxLenT = greatestTissue
 						binValue = binValueT
+
 			#-------END FOR------
+			# for c in cowRecCopy:
+			# 	cv2.rectangle(mainFrame,(c.getX(),c.getY()),(c.getX()+c.getW(),c.getY()+c.getH()),(255,255,255),4)
+			drawGreatestTissue(maxLenT)
+
 			if len(maxLenT) > minNumSquares:
 				return True, maxLenT
 			else:
@@ -284,7 +335,148 @@ def isThereACow(flag):
 			maxLenT = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
 			return True, maxLenT
 	return False, maxLenT
+
+def isThereACowRecife(flag):
+	global mainFrame
+	global binValue
+	maxLenT = [] # maximumLenghtTissue
+	cowRecCopy = []
+	allSquares = [] # Store, in each iteration of the binarization, the squares found in the image
+	minNumSquares = 2
+	# mainFrame = cv2.imread('/home/pi/pruebasVision/FotosVaca/img2.jpg') 
+	gF = True
+	gF = takePicture() # returns boolean to know if the picture is OK
+	if gF:
+		filteredFrame = rb.clearImage(mainFrame)	# Clear the image with a GaussianBlur
+		equalizedFrame = cv2.equalizeHist(filteredFrame)
+		if flag == -1:
+			# FOR: search for the best threshold value
+			print time.time()
+			for binValueT in range(10,160,5):
+				cp1 = cp2 = cp3 = deepcopy(equalizedFrame)
+				thresFrame = rb.doThresHold(cp1, binValueT, 7,1) 
+				contours = rb.findContours(thresFrame) 
+				cowRectangles = rb.getGoodSquares(contours,mainFrame,thresFrame) 
+				findEquals(allSquares,cowRectangles,15)
+
+				thresFrame1 = rb.doThresHold(cp2, binValueT,3,3) # Thresholds the image and erodes it
+				contours1 = rb.findContours(thresFrame1) # Finds all the contours inside the image
+				cowRectangles1 = rb.getGoodSquares(contours1,mainFrame,thresFrame1) # From contours, extract possile cow squares
+				findEquals(allSquares,cowRectangles1,15)
+
+				thresFrame2 = rb.doThresHold(cp3, binValueT,5,2) 
+				contours2 = rb.findContours(thresFrame2) 
+				cowRectangles2 = rb.getGoodSquares(contours2,mainFrame,thresFrame2) 
+				findEquals(allSquares,cowRectangles2,15)
+
+				del cp1
+				del cp2
+				del cp3
+			#-------END FOR------
+			print time.time()
+			for c in allSquares:
+				cv2.rectangle(mainFrame,(c.getX(),c.getY()),(c.getX()+c.getW(),c.getY()+c.getH()),(255,255,255),4)
+			# When there are more than 'minNumSquares', it can be found at least one tissue
+			if len(allSquares) > minNumSquares:
+				greatestTissue = rb.makeTissue(allSquares,[],40,0,[0,0],0)
+				drawGreatestTissue(greatestTissue)
+				if len(greatestTissue) > minNumSquares:
+					return True, allSquares
+				else:
+					return False, allSquares
+
+		elif flag == 0:
+			thresFrame = rb.doThresHold(filteredFrame, binValue) # Thresholds the image and erodes it
+			contours = rb.findContours(thresFrame) # Finds all the contours inside the image
+			cowRectangles = rb.getGoodSquares(contours,mainFrame) # From contours, extract possile cow squares
+			newCowRectangles = sorted(cowRectangles, key=lambda x:x.getY(), reverse=True)
+			maxLenT = rb.makeTissue(newCowRectangles,[],20,0,[0,0],0)
+			return True, maxLenT
+	return False, maxLenT
+
+def findEquals(allSqrs,partial,epsilon):
+	while len(partial) > 0:
+		testSqr = partial.pop(0)
+		found = False
+		for compSqr in allSqrs:
+			if (distanceBCorners(compSqr.getTopLeftC(),testSqr.getTopLeftC()) < epsilon or distanceBCorners(compSqr.getTopRightC(),testSqr.getTopRightC()) < epsilon or distanceBCorners(compSqr.getBotLeftC(),testSqr.getBotLeftC()) < epsilon or distanceBCorners(compSqr.getBotRightC(),testSqr.getBotRightC()) < epsilon) and not found:
+				found = True 
+				if testSqr.getArea() > compSqr.getArea():
+					compSqr.x = testSqr.x
+					compSqr.y = testSqr.y
+					compSqr.w = testSqr.w
+					compSqr.h = testSqr.h
+					compSqr.area = testSqr.area
+					compSqr.level = testSqr.level
+					compSqr.topLeftC = testSqr.topLeftC
+					compSqr.topRightC = testSqr.topRightC
+					compSqr.botLeftC = testSqr.botLeftC
+					compSqr.botRightC = testSqr.botRightC
+				
+		if not found:
+			allSqrs.append(testSqr)
 		
+def isThereATank():
+	# Arrange the inclination of the camera
+	subprocess.Popen([UVCDYNCTRLEXEC,"-s","Tilt Reset","--","1"])
+
+	# Load the new picture
+	global mainFrame
+	tank = [0,0,0,0,0]
+	gF = True
+	gF = takePicture()
+	# mainFrame = cv2.imread('/home/pi/pruebasVision/FotosVaca/img19.jpg')
+	if gF:
+		# Converting to HSV
+		copyMF = deepcopy(mainFrame)
+		hsv = cv2.cvtColor(copyMF,cv2.COLOR_BGR2HSV)
+
+		# Defining the boundries
+		lower_orange = np.array([0,120,120])
+		upper_orange = np.array([50,255,255])
+
+		# Create a mask to find the orange
+		mask = cv2.inRange(hsv,lower_orange,upper_orange)
+
+		# Use contours to find the tank
+		contours = rb.findContours(mask)
+		for cnt in contours:
+			area = cv2.contourArea(cnt)
+			x,y,w,h = cv2.boundingRect(cnt)
+			if area > 1000 and area > tank[0]:
+				tank = [area,x,y,w,h]
+
+		# Print the tank in the image
+		cv2.rectangle(mainFrame,(tank[1],tank[2]),(tank[1]+tank[3],tank[2]+tank[4]),(0,255,0),4)
+		cv2.imshow('mainF',mainFrame)
+		cv2.imshow('mask',mask)
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
+
+		if tank[0] > 1000:
+			return True, tank
+		else:
+			return False, tank
+
+def centerToTank(tank):
+	tCenter = tank[1] + tank[3]*0.5
+	if tCenter > 325:
+		turnBot("7")
+		_,tank = isThereATank()
+		tCenter = tank[1] + tank[3]*0.5
+		while tCenter > 325:
+			turnBot("7")
+			_,tank = isThereATank()
+			tCenter = tank[1] + tank[3]*0.5
+	elif tCenter < 315:
+		turnBot("-7")
+		_,tank = isThereATank()
+		tCenter = tank[1] + tank[3]*0.5
+		while tCenter > 325:
+			turnBot("-7")
+			_,tank = isThereATank()
+			tCenter = tank[1] + tank[3]*0.5
+
 def isCowMilkeable(tissue):
 	# INPUT: maximunLengthTissue found in isThereACow
 	# OUTPUT : bool to go and milk the cow, limLeft, limRight, limTop
@@ -318,11 +510,11 @@ def isCowMilkeable(tissue):
 def main():
 	if(checkForArduino()):
 		while (1):
-			if(confirmTerrineZone()):	
+			#if(confirmTerrineZone() == "0"):	
 				# findTerrine()
 				# grabTerrine()
-				analizeEnviroment()	
-				milk()
+			analizeEnviroment()	
+			ans = milk()
 				# if(milk()):
 				# 	goAlamus()
 				# time.sleep(5)
@@ -403,38 +595,58 @@ def readFromFile(fileName):
 def centerOfCow(l,r):
 	return (l+r)/2
 
+def distanceBCorners(c1,c2):
+	x1 = c1[0]
+	x2 = c2[0]
+	y1 = c1[1]
+	y2 = c2[1]
+	return rb.distance(x1,y1,x2,y2)
+
+def emiloTest():
+	checkForArduino()
+	cowFound, cowTissue = isThereACow(-1)
+	if cowFound:
+		# print "Cow Found"
+		go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
+		if go:
+			prepareToMilk(lL,lR,lT,theta)
+			milk()
+			# print "Theta: ",theta
+			# if go:
+			# 	print "Trying to milk..."
+			# 	center2center(lL,lR,lT,theta)
+			# 	milk()
 ##-----------------------------------------##
 
 ##-----------Arduino Interaction-----------##
 def checkForArduino():
 	# Send a 'b' to tell the Arduino the RaspberryPi is alive
-	print "Conecting with arduino"
+	# print "Conecting with arduino"
 	ans = " "
-	start = time.time()
-	while ans != "b" and time.time() - start < 30:
+	# start = time.time()
+	while ans != "b" and time.time() - start < 10:
 		arduino.write("b")
 		time.sleep(1)
 		ans = arduino.read()	
-	print "Time to boot arduino: ", (time.time() - start)
+	# print "Time to boot arduino: ", (time.time() - start)
 	# Arduino is alive if the RaspberryPi recieved a 'b'
 	if(ans == "b"): 
 		arduino.flushInput()	
 		arduino.flushOutput()
 		return True
-	else:
-		raise IOError("Can't connect with arduino")
+	elif (ans == "t"):
+		# Arduino was already initialized
+		return True
 
 def confirmTerrineZone():
 	# This function is for the 1st case of the Arduino. The position of the terrines 
 	# should detect a wall with the left and back distance sensors.
-	arduino.flushInput()	
-	arduino.flushOutput()
+
 	arduino.write("1")	# Execute the 1st state of the arduino
 	res = " "
 	while res != "0":
-		time.sleep(1.5)		# Wait for 1.5 seconds before reading a answer from Arduino
-		res = arduino.read(2)
-		# #print "Res: ",res
+		res = wait4ArduAnswer()
+		# print "Res: ",res
 		if (res == "0"):
 			return True
 		else:
@@ -442,9 +654,11 @@ def confirmTerrineZone():
 
 def findTerrine():
 	arduino.write('2')
+	return wait4ArduAnswer()
 
 def grabTerrine():
 	arduino.write('3')
+	return wait4ArduAnswer()
 
 def moveBot(cm):
 	if cm == "forward":
@@ -455,10 +669,7 @@ def moveBot(cm):
 	arduino.write("4")
 	arduino.write("0")
 	arduino.write(cm)
-	while(arduino.inWaiting() <= 0):
-		pass
-	res = arduino.read(2)
-	print res
+	return wait4ArduAnswer()
 
 def turnBot(degrees):
 	if degrees == "right":
@@ -471,24 +682,18 @@ def turnBot(degrees):
 	arduino.write("4")
 	arduino.write("1")
 	arduino.write(degrees)
-        
-	while(arduino.inWaiting() <= 0):
-		pass
-
-	ans = arduino.read(2)
-	print ans
-	return(ans)
+	return wait4ArduAnswer()
 
 def wait4ArduAnswer():
+	print "Waiting 4 Arduino..."
 	while(arduino.inWaiting() <= 0):
 		pass
 	return arduino.read(arduino.inWaiting())
 
 def milk():
 	arduino.write("7")
-	while (arduino.inWaiting() <= 0):
-		pass
-	if(arduino.read(1) == "1"):
+	ans = wait4ArduAnswer()
+	if(ans == "1"):
 		# It entered below the cow
 		return True
 	else:
@@ -517,63 +722,13 @@ def goAlamus():
 
 ##-----------LOOP-----------##
 def mymain():
-	checkForArduino()
-	while 1:
-		cowFound, cowTissue = isThereACow()
-		if cowFound:
-			print "Cow Found"
-			go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-			if go:
-				moveTo50(lT)
-				cowFound, cowTissue = isThereACow()
-				go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-				actCenter = (lL + lR) / 2
-				print "Act Center: ",actCenter
-				if actCenter > 320:
-					print "Moving Right..."
-					turnBot("3")
-					time.sleep(3)
-					cowFound, cowTissue = isThereACow()
-					go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-					actCenter = (lL + lR) / 2
-					print "Act Center: ",actCenter
-					while actCenter > 320:
-						turnBot("3")
-						time.sleep(3)
-						cowFound, cowTissue = isThereACow()
-						go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-						actCenter = (lL + lR) / 2
-						print "Act Center: ",actCenter
-				elif actCenter < 320:
-					print "Moving Left..."
-					turnBot("-3")
-					time.sleep(3)
-					cowFound, cowTissue = isThereACow()
-					go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-					actCenter = (lL + lR) / 2
-					print "Act Center: ",actCenter
-					while actCenter < 320:
-						turnBot("-3")
-						time.sleep(3)
-						cowFound, cowTissue = isThereACow()
-						go,lL,lR,lT,theta = isCowMilkeable(cowTissue)
-						actCenter = (lL + lR) / 2
-						print "Act Center: ",actCenter
-			arduino.flushInput()
-			arduino.flushOutput()
-			milk()
-			print arduino.read(arduino.inWaiting())
-			print "Cow centered!"
-		time.sleep(10)
-
-			# print "Theta: ",theta
-			# if go:
-			# 	print "Trying to milk..."
-			# 	center2center(lL,lR,lT,theta)
-			# 	milk()
+	bT,tis = isThereACowRecife(-1)
+	print bT
+	cv2.imshow('m',mainFrame)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
 ##-------------------------##
 mymain()
-# main()
 ##-----------Final Instructions-----------##
 cap.release()
 ##----------------------------------------##

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## This is version 1.0 of LARC 2016 Module of Mexican Team RoBorregos
 ## which stores functions used by the computer vision squad. 
 ## All rights reserved by Instituo Tecnologico de Monterrey.
@@ -193,10 +192,11 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
 
    if checkWith == 1:   # corner => topLeft
       found = False     # Flag to check if the tissue found a neighboor
+      # found2 = False
       for i in range(len(tCowSquares)):    # Go over all the elements in 'tCowSquares' from 0 to len(cowSquares)-1
          cowSquare= tCowSquares[i]        # temporal square
          compareCoord = cowSquare.getBotRightC()   # use the corner of interest depending on the attribute 'checkWith'
-
+         # compareCoord2 = cowSquare.getTopRightC()
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon and compareCoord[1] - 30 <= corner[1]):
             cowSquare.setLevel(curLevel + 1)   # Set the level of the square
@@ -204,17 +204,32 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
             found = True
             tCowSquares.pop(i)
             break
+         # if(distance(corner[0],corner[1],compareCoord2[0],compareCoord2[1]) > cowSquare.getW() * 0.75 and distance(corner[0],corner[1],compareCoord2[0],compareCoord2[1]) < cowSquare.getW() * 1.25 and abs(compareCoord2[1] - corner[1]) < 25):
+         #    cowSquare.setLevel(curLevel)   # Set the level of the square
+         #    tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
+         #    found = True
+         #    tCowSquares.pop(i)
+         #    break        
+
       if found:
          tempElement = tissue[len(tissue)-1]
          makeTissue(tCowSquares, tissue, epsilon, 1, tempElement.getTopLeftC(), curLevel + 1)
          makeTissue(tCowSquares, tissue, epsilon, 2, tempElement.getTopRightC(), curLevel + 1)
          makeTissue(tCowSquares, tissue, epsilon, 3, tempElement.getBotLeftC(), curLevel + 1)
 
+      # if found2:
+      #    tempElement = tissue[len(tissue)-1]
+      #    makeTissue(tCowSquares, tissue, epsilon, 1, tempElement.getTopLeftC(), curLevel)
+      #    makeTissue(tCowSquares, tissue, epsilon, 2, tempElement.getBotRightC(), curLevel)
+      #    makeTissue(tCowSquares, tissue, epsilon, 3, tempElement.getBotLeftC(), curLevel)
+
    elif checkWith == 2:   # corner => topRight
       found = False
+      # found2 = False
       for i in range(len(tCowSquares)):
          cowSquare= tCowSquares[i]
          compareCoord = cowSquare.getBotLeftC()
+         # compareCoord2 = cowSquare.getTopLeftC()
 
          # Find the distance between the two corners in order to find adjacent ones
          if(distance(corner[0],corner[1],compareCoord[0],compareCoord[1]) < epsilon and compareCoord[1] - 30<= corner[1]):
@@ -223,11 +238,25 @@ def makeTissue(tCowSquares, tissue, epsilon, checkWith, corner, curLevel):
             found = True
             tCowSquares.pop(i)
             break
+
+         # if(distance(corner[0],corner[1],compareCoord2[0],compareCoord2[1]) > cowSquare.getW() * 0.75 and distance(corner[0],corner[1],compareCoord2[0],compareCoord2[1]) < cowSquare.getW() * 1.25 and abs(compareCoord2[1] - corner[1]) < 25):
+         #    cowSquare.setLevel(curLevel)   # Set the level of the square
+         #    tissue.append(cowSquare)  # Add 'cowSquare' to the list 'tissue'
+         #    found = True
+         #    tCowSquares.pop(i)
+         #    break 
+
       if found:
          tempElement = tissue[len(tissue)-1]
          makeTissue(tCowSquares, tissue, epsilon, 1, tempElement.getTopLeftC(), curLevel + 1)
          makeTissue(tCowSquares, tissue, epsilon, 2, tempElement.getTopRightC(), curLevel + 1)
          makeTissue(tCowSquares, tissue, epsilon, 4, tempElement.getBotRightC(), curLevel + 1)
+
+      # if found2:
+      #    tempElement = tissue[len(tissue)-1]
+      #    makeTissue(tCowSquares, tissue, epsilon, 1, tempElement.getTopRightC(), curLevel)
+      #    makeTissue(tCowSquares, tissue, epsilon, 2, tempElement.getBotRightC(), curLevel)
+      #    makeTissue(tCowSquares, tissue, epsilon, 3, tempElement.getBotLeftC(), curLevel)
 
    elif checkWith == 3:   # corner => botLeft
       found = False
@@ -357,7 +386,7 @@ def printCowSquares(imgOriginal,G,B,R,sqrs):
       w = sqr.getW()
       h = sqr.getH()
       cv2.rectangle(imgOriginal,(x,y),(x+w,y+h),(G,B,R),2)
-   cv2.imshow('m',imgOriginal) 
+   # cv2.imshow('m',imgOriginal) 
 
 def findClusters(cowRectangles,iterations,coordClusters):
    # This function is to implement the clustering algorithm 
@@ -461,3 +490,4 @@ def boundingRectSort(allRect,criteria):
       key=lambda b:b[1][i], reverse=False))
  
    return (allRect, boundingBoxes)
+##-------------------------------------

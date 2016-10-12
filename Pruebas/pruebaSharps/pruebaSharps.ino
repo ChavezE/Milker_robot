@@ -34,14 +34,14 @@ SharpIR sharp8(sharpLB, 25, 93, 2016);
 void setup(){
   
   Serial.begin(9600);
-  pinMode (A7, INPUT);
   pinMode (A8, INPUT);
   pinMode (A9, INPUT);
   pinMode (A10, INPUT);
   pinMode (A11, INPUT);
   pinMode (A12, INPUT);
   pinMode (A13, INPUT);
-  pinMode (A14, INPUT); 
+  pinMode (A14, INPUT);
+  pinMode (A15, INPUT); 
   
   AFMS.begin();
   M1->setSpeed(150);
@@ -62,8 +62,8 @@ void loop(){
   unsigned long int clk = millis();
   Serial.print("sharpFL: ");
   Serial.print(sharp1.distance());
-  Serial.print("  TIME:");
-  Serial.println(millis() - clk);
+  //Serial.print("  TIME:");
+  //Serial.println(millis() - clk);
   Serial.print("\tsharpFR: ");
   Serial.print(sharp2.distance());
   Serial.print("\tsharpRT: ");
@@ -78,7 +78,7 @@ void loop(){
   Serial.print(sharp7.distance());
   Serial.print("\tsharpLB: ");
   Serial.println(sharp8.distance());
-  if(millis() > 800000)
+  if(millis() > 8000)
   {
     M1->run(FORWARD);
     M2->run(FORWARD);

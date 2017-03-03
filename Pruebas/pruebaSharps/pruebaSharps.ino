@@ -21,6 +21,7 @@ const uint8_t sharpBL = A9;   // sharpBackLeft
 const uint8_t sharpBR = A8;   // sharpBackRight
 const uint8_t sharpLT = A11;  // sharpLeftTop
 const uint8_t sharpLB = A10;  // sharpLeftBottom
+const uint8_t sharpG = A7;    // sharpGripper
 
 SharpIR sharp1(sharpFL, 25, 93, 2016);
 SharpIR sharp2(sharpFR, 25, 93, 2016);
@@ -30,10 +31,12 @@ SharpIR sharp5(sharpBL, 25, 93, 2016);
 SharpIR sharp6(sharpBR, 25, 93, 2016);
 SharpIR sharp7(sharpLT, 25, 93, 2016);
 SharpIR sharp8(sharpLB, 25, 93, 2016);
+SharpIR sharp9(sharpG, 25, 93, 2016);
 
 void setup(){
   
   Serial.begin(9600);
+  pinMode (A7, INPUT);
   pinMode (A8, INPUT);
   pinMode (A9, INPUT);
   pinMode (A10, INPUT);
@@ -77,8 +80,10 @@ void loop(){
   Serial.print("\tsharpLT: ");
   Serial.print(sharp7.distance());
   Serial.print("\tsharpLB: ");
-  Serial.println(sharp8.distance());
-  if(millis() > 8000)
+  Serial.print(sharp8.distance());
+  Serial.print("\tsharpG: ");
+  Serial.println(sharp9.distance());
+  if(millis() > 800000)
   {
     M1->run(FORWARD);
     M2->run(FORWARD);

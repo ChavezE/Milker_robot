@@ -49,12 +49,12 @@ const uint8_t servoHM = 51; // servoHorizontalMovement
 const uint8_t servoL = 33;  // servoLevas
 const uint8_t servoAM = 39; // servoASOMovement
 
-const uint8_t limitSwitchHMI = 49; // limitSwitchHorizontalMovementIn
-const uint8_t limitSwitchHMO = 47; // limitSwitchHorizontalMovementOut
+const uint8_t limitSwitchHMI = 16; // limitSwitchHorizontalMovementIn
+const uint8_t limitSwitchHMO = 17; // limitSwitchHorizontalMovementOut
 const uint8_t limitSwitchGMI = 43;  // limitSwitchGripperMovementIn
 const uint8_t limitSwitchGMO = 45;  // limitSwitchGripperMovementOut
-const uint8_t limitSwitchAMI = 16;  // limitSwitchASOMovementIn
-const uint8_t limitSwitchAMO = 17;  // limitSwitchASOMovementOut
+const uint8_t limitSwitchAMI = 47;  // limitSwitchASOMovementIn
+const uint8_t limitSwitchAMO = 49;  // limitSwitchASOMovementOut
 
 //--------------------- Motors -----------------------------//
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
@@ -675,13 +675,7 @@ void setup() {
 
   // init encoders
   pinMode(encoderF, INPUT_PULLUP);
-  //pinMode(encoderB, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(encoderF), addFrontStep, CHANGE);
-  //attachInterrupt(digitalPinToInterrupt(encoderB), addBackStep, CHANGE);
-
-  // init lcd
-  // lcd.begin();
-  // lcd.backlight();
   
   // init motors
   AFMS.begin();
@@ -716,553 +710,92 @@ void setup() {
   pinMode (sharpLT, INPUT);
   pinMode (sharpLB, INPUT); 
   pinMode (sharpG, INPUT);
-
-  // init IMU
-  if(!bno.begin())
-  {
-    //lcd.setCursor(0,0);
-    //lcd.print("IMU not working");
-    delay(1000);
-    //lcd.clear();
-  }
-  bno.setExtCrystalUse(true);
-  //lcd.setCursor(0,0);
-  //lcd.print("Calibrating IMU");
-  while(getIMUCalStatus() <= 0);
-  //lcd.setCursor(0,1);
-  //lcd.print("Done");
-  //lcd.clear();
-  
-  // init Servos in initial position
-  gripperA.attach(servoGA);
-  gripperT.attach(servoGT);
-  gripperM.attach(servoGM);
-  horizontalM.attach(servoHM);
-  levas.attach(servoL);
-  asoM.attach(servoAM);
-  
-  gripperA.write(70);
-  gripperT.write(0);
-  gripperM.write(90);
-  horizontalM.write(90);
-  levas.write(90);
-  asoM.write(90);
-  
-  delay(1000);
-  
-  gripperA.detach();
-  gripperT.detach();
-  gripperM.detach();
-  horizontalM.detach();
-  levas.detach();
-  asoM.detach();
-
-  /*
-  // setting ASO in the correct position
-  asoMovementIn(100);
-  clk = millis();
-  while(digitalRead(limitSwitchAMI) == 1 && millis() - clk < 3000);
-  stopAsoMovement();
-
-  // setting Horizontal Movemment in the correct position
-  horizontalMovementIn(85);
-  clk = millis();
-  while(digitalRead(limitSwitchHMI) == 1 && millis() - clk < 3000);
-  stopHorizontalMovement();
-
-  // setting Gripper in the correct position
-  gripperMovementIn(95);
-  clk = millis();
-  while(digitalRead(limitSwitchGMI) == 1 && millis() - clk < 3000);
-  stopGripperMovement();
   
   // waiting for Raspberry to boot
-  while(Serial.available() <= 0)
-  {
-    //lcd.setCursor(0,0);
-    //lcd.print("Booting Rasp...");
-  }
+  while(Serial.available() <= 0);
   Serial.print(Serial.readString());
-  //lcd.clear();
-  //lcd.print("Rasp: OK");
-  //lcd.clear();
-  */
 }
 
 //--------------------- Main program ----------------------//
 void loop() {    
   // TODO: Being able to start in different corners
-  delay(1000);
-  leftMotorSpeed = 80;
-  rightMotorSpeed = 80;
-  MLB->setSpeed(leftMotorSpeed);
-  MRB->setSpeed(rightMotorSpeed);
-  MRF->setSpeed(rightMotorSpeed);
-  MLF->setSpeed(leftMotorSpeed);
-  moveForward(40);
-  delay(500);
-  leftMotorSpeed = 140;
-  rightMotorSpeed = 140;
-  MLB->setSpeed(leftMotorSpeed);
-  MRB->setSpeed(rightMotorSpeed);
-  MRF->setSpeed(rightMotorSpeed);
-  MLF->setSpeed(leftMotorSpeed);
-  moveForward(40);
-  delay(1000);
-  turnRight(90);
-  delay(500);
-  turnLeft(87);
-  delay(100000);
-  
-  /*
-  Serial.print("HMI:");
-  Serial.print(digitalRead(47));
-  Serial.print("   HMO:");
-  Serial.print(digitalRead(49));
-  Serial.print("   GMI:");
-  Serial.print(digitalRead(43));
-  Serial.print("   GMO:");
-  Serial.print(digitalRead(45));
-  Serial.print("   AMI:");
-  Serial.print(digitalRead(16));
-  Serial.print("   AMO:");
-  Serial.println(digitalRead(17));
-  */
-  /*
   if(Serial.available() > 0)
   {
     switch(Serial.read() - 48)
     {
-      // 1.- Getting ready in the empty terrines zone
-      // TODO: Correct to left wall if far away
+      case 0:
+      {
+        Serial.println("Case 0: Opening Gripper");
+        openGripper();
+      }
+      break;
       case 1:
       {
-        leftMotorSpeed = 80;
-        rightMotorSpeed = 80;
-        MLB->setSpeed(leftMotorSpeed);
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-        MLF->setSpeed(leftMotorSpeed);
-
-        turnRight(90);
-        moveBackward(500);
-        Serial.print("0");
-        /*
-        if(distLT.distance() > wallDistance)
-          Serial.print("-1");
-        else
-          Serial.print("0");
-        */ /*
+        Serial.println("Case 1: Closing Gripper");
+        closeGripper();
       }
       break;
-
-      // 2.- Find terrine
       case 2:
       {
-        leftMotorSpeed = 40;
-        rightMotorSpeed = 40;
-        MLB->setSpeed(leftMotorSpeed);
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-        MLF->setSpeed(leftMotorSpeed);
-
-        locateTerrine();
-        float distanceFR = distFR.distance();
-        float distanceFL = distFL.distance();
-        float distanceGripper = distG.distance();
-        if(distanceGripper <= 20)
-          Serial.print("0");
-        else if(distFR.distance() <= wallDistance + 3 && distFL.distance() <= wallDistance + 3)
-          Serial.print("1");
-        else
-          Serial.print("-1");
+        Serial.println("Case 2: Horizontal Movement Out"); 
+        horizontalMovementOut(95);
+        delay(1000);
+        stopHorizontalMovement();
       }
       break;
-
-      // 3.- Grab terrine TODO implement error handling
       case 3:
       {
-        leftMotorSpeed = 40;
-        rightMotorSpeed = 40;
-        MLB->setSpeed(leftMotorSpeed);
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-        MLF->setSpeed(leftMotorSpeed);
-
-        float distanceGripper;
-        int iterations = 1;
-        bool terrinePicked = false;
-        while(!terrinePicked && iterations <= 3)
-        {
-          openGripper();
-          distanceGripper = distG.distance();
-          //Serial.println(distanceGripper);
-          // Serial.print("Switch: ");
-          // Serial.println(digitalRead(limitSwitchHMO));
-          if(distanceGripper > terrineDistance - 1 && digitalRead(limitSwitchHMO) == 1)
-            horizontalMovementOut(95);
-          clk = millis();
-          unsigned long operationTime = millis() - clk;
-          while(distanceGripper > terrineDistance - 1 && digitalRead(limitSwitchHMO) == 1 && operationTime < 10000)
-          {
-            distanceGripper = distG.distance();
-            //Serial.println(distanceGripper);
-            operationTime = millis() - clk;
-            // Serial.print("Switch: ");
-            // Serial.println(digitalRead(limitSwitchHMO));
-          }
-          while(distanceGripper < 2*terrineDistance - 4 && digitalRead(limitSwitchHMO) == 1 && operationTime < 10000)
-          {
-            distanceGripper = distG.distance();
-            //Serial.println(distanceGripper);
-            operationTime = millis() - clk;
-            // Serial.print("Switch: ");
-            // Serial.println(digitalRead(limitSwitchHMO));
-          }
-          //if(distanceGripper <= terrineDistance)
-          //  delay(1000);
-          stopHorizontalMovement();
-          closeGripper();
-          horizontalMovementIn(85);
-          clk = millis();
-          while(digitalRead(limitSwitchHMI) == 1 && millis() - clk < operationTime + 5000);
-          stopHorizontalMovement();
-          moveForward(20);
-          turnRight(90);
-          distanceGripper = distG.distance();
-          turnLeft(90);
-          if(distanceGripper <= 4*terrineDistance)
-          {
-            terrinePicked = true;
-          }
-          else 
-          { 
-            moveBackward(500,iterations);
-            locateTerrine();
-          }
-          iterations++;
-        }
-        Serial.print("0");
+        Serial.println("Case 3: Horizontal Movement In"); 
+        horizontalMovementIn(85);
+        delay(1000);
+        stopHorizontalMovement();
       }
       break;
-
-      // 4.- Move in grid searching the cow
       case 4:
       {
-        // Serial order: 
-        // #1 - move(0), turn(1) or turnTo(2)
-        // #2 - cm or degrees
-        // Status:
-        // 0: OK
-        // -1: Cannot move that distance in that direction
-        leftMotorSpeed = 80;
-        rightMotorSpeed = 80;
-        MLB->setSpeed(leftMotorSpeed);
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-        MLF->setSpeed(leftMotorSpeed);
-
-        while(Serial.available() <= 0);
-        int iCase = Serial.read() - 48;
-        if(iCase == 1)
-        {
-          while(Serial.available() <= 0);
-          int angle = Serial.readString().toInt();
-          // lcd.clear();
-          // lcd.setCursor(12,0);
-          // lcd.print("0:");
-          // lcd.print(angle);
-          if(angle > 0)   // + to the right and - to the left
-            turnRight(angle);
-          else
-            turnLeft(-angle);
-          Serial.print("0");
-        }
-        else if(iCase == 2)
-        {
-          while(Serial.available() <= 0);
-          int angle = Serial.readString().toInt();
-          // lcd.clear();
-          // lcd.setCursor(12,0);
-          // lcd.print("0:");
-          // lcd.print(angle);
-          turnTo(angle);
-          Serial.print("0");
-        }
-        else
-        {
-          while(Serial.available() <= 0);
-          int distance = Serial.readString().toInt();
-          // lcd.clear();
-          // lcd.setCursor(0,0);
-          // lcd.print("Moving ");
-          // lcd.print(distance);
-          // lcd.print(" cm");
-          String status;
-          if(distance > 0)  // + forward and - backwards
-            status = moveForward(distance);
-          else 
-            status = moveBackward(-distance);
-          Serial.print(status);
-        }
+        Serial.println("Case 4: Gripper Movement Out"); 
+        gripperMovementOut(80);
+        delay(1000);
+        stopGripperMovement();
       }
       break;
-
-      // 5.- Detect cow with vision (null, raspberry work)
-      case 11:
-      break;
-
-      // 6.- Position in the cow lateral (null, use case 4)
-      case 6:
-      {
-        while(Serial.available() <= 0)
-          Serial.println(distG.distance());
-      }
-      break;
-
-      // 7.- Enter below cow
-      case 7:
-      {
-        leftMotorSpeed = 40;
-        rightMotorSpeed = 40;
-        MLB->setSpeed(leftMotorSpeed);
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-        MLF->setSpeed(leftMotorSpeed);
-
-        int iterations = 1;
-        bool belowCow = false;
-        while(!belowCow && iterations <= 3)
-        {
-          switch(enterCow())
-          {
-            case -2:
-              iterations = 10;  // getting out of the while loop
-              Serial.print("-2");
-            break;
-            case 0:
-              belowCow = true;
-              Serial.print("0");
-            break;
-            case 1:
-              moveBackward(10);
-              turnLeft(45);
-              moveBackward(10);
-              turnRight(45);
-            break;
-            case 2:
-              moveBackward(10);
-              turnRight(45);
-              moveBackward(10);
-              turnLeft(45);
-            break;   
-            case 3:
-              moveBackward(10);
-              turnLeft(45);
-              moveBackward(10);
-              turnRight(45);
-            break;
-          }
-          iterations++;
-        }          
-      }
-      break;
-
-      // 8.- Milk cow // TODO hazlo chido
-      case 8:
-      {
-        if(digitalRead(limitSwitchHMO) == 1)
-          horizontalMovementOut(180);
-        clk = millis();
-        while(digitalRead(limitSwitchHMO) == 1 && millis() - clk < 3000);
-        horizontalMovementIn(0);
-        clk = millis();
-        while(digitalRead(limitSwitchHMI) == 1 && millis() - clk < 3000);
-        horizontalMovementOut(180);
-        clk = millis();
-        while(digitalRead(limitSwitchHMO) == 1 && millis() - clk < 3000);
-        horizontalMovementIn(0);
-        clk = millis();
-        while(digitalRead(limitSwitchHMI) == 1 && millis() - clk < 3000);
-        horizontalMovementOut(180);
-        clk = millis();
-        while(digitalRead(limitSwitchHMO) == 1 && millis() - clk < 500);        
-        stopHorizontalMovement();
-        asoMovementOut(80);
-        clk = millis();
-        while(digitalRead(limitSwitchAMO) == 1 && millis() - clk < 3000);
-        stopAsoMovement();
-        milk(180);
-        clk = millis();
-        while(millis() - clk < 6000);
-        milk(135);
-        asoMovementIn(88);
-        clk = millis();
-        while(digitalRead(limitSwitchAMI) == 1 && millis() - clk < 5000);
-        stopAsoMovement();
-        stopMilking();
-
-        // setting Horizontal Movemment in the correct position
-        horizontalMovementIn(85);
-        clk = millis();
-        while(digitalRead(limitSwitchHMI) == 1 && millis() - clk < 3000);
-        stopHorizontalMovement();
-      }
-      break;
-
-      // 9.- Exit cow
-      // TODO: Handle when cow is in the middle of the robot movement
-      case 9:
-      {
-        leftMotorSpeed = 80;
-        rightMotorSpeed = 80;
-        MLB->setSpeed(leftMotorSpeed);
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-        MLF->setSpeed(leftMotorSpeed);
-
-        moveBackward(80);
-        while(Serial.available() <= 0);
-        int wallAngle = Serial.readString().toInt();
-        turnTo(wallAngle);
-        String status = moveForward(500);
-        Serial.print(status);
-      }
-      break;
-
-      // 10.- Return to empty terrines zone (null, use case 4)
-      case 10:
-      break;
-
-      // 11.- Search door
-      // TODO: Handle when cow is in the middle of the way
       case 5:
       {
-        leftMotorSpeed = 80;
-        rightMotorSpeed = 80;
-        MLB->setSpeed(leftMotorSpeed);
-        MRB->setSpeed(rightMotorSpeed);
-        MRF->setSpeed(rightMotorSpeed);
-        MLF->setSpeed(leftMotorSpeed);
-
-        float oPos = getOrientation();
-        //if(oPos >= 360 - precisionIMU || oPos <= precisionIMU || (oPos >= 90 - precisionIMU && oPos <= 90 + precisionIMU))
-        if((oPos >= 90 - 2*precisionIMU && oPos <= 90 + 2*precisionIMU) || (oPos >= 180 - 2*precisionIMU && oPos <= 180 + 2*precisionIMU))
-        {
-          turnLeft(90);
-          while(distRT.distance() <= 4*wallDistance || distRB.distance() <= 4*wallDistance)
-          {
-            float ePos = getOrientation();
-            float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
-            float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
-  
-            while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distRT.distance() <= 4*wallDistance || distRB.distance() <= 4*wallDistance))
-              moveForwardStraight(ePos, iLim, oLim);
-            stopMotors();
-            if(distFR.distance() <= wallDistance + 3 && distFL.distance() <= wallDistance + 3)
-              turnLeft(90);
-          }
-          moveForward(15);
-          turnRight(90);
-          moveForward(80);
-        }
-        else 
-        {
-          turnRight(90);
-          while(distLT.distance() <= 4*wallDistance || distLB.distance() <= 4*wallDistance)
-          {
-            float ePos = getOrientation();
-            float iLim = ePos - precisionIMU <= 0 ? ePos + 360 - precisionIMU : ePos - precisionIMU;
-            float oLim = ePos + precisionIMU > 360 ? ePos - 360 + precisionIMU : ePos + precisionIMU;
-            while(distFR.distance() > wallDistance && distFL.distance() > wallDistance && (distLT.distance() <= 4*wallDistance || distLB.distance() <= 4*wallDistance))
-              moveForwardStraight(ePos, iLim, oLim);
-            stopMotors();
-            if(distFR.distance() <= wallDistance + 3 && distFL.distance() <= wallDistance + 3)
-              turnRight(90);
-          }
-          moveForward(10);
-          turnLeft(90);
-          moveForward(80);
-        }
-        Serial.print("0");
+        Serial.println("Case 5: Gripper Movement In"); 
+        gripperMovementIn(95);
+        delay(1000);
+        stopGripperMovement();
       }
       break;
-
-      // 12.- Localize milk tank (null, use case 4 and vision)
-      case 12:
+      case 6:
+      {
+        Serial.println("Case 6: ASO Movement Out"); 
+        asoMovementOut(40);
+        delay(5000);
+        stopAsoMovement();
+      }
       break;
-
-      // 13.- Move towards milk tank (null, use case 4)
-      case 13:
+      case 7:
+      {
+        Serial.println("Case 7: ASO Movement In"); 
+        asoMovementIn(100);
+        delay(1000);
+        stopAsoMovement();
+      }
       break;
-
-      // 14.- Getting ready to deposit milk (null, use case 4 or change to use sharps)
-      case 14:
+      case 8:
+      {
+        Serial.println("Case 8: Milking"); 
+        milk(180);
+        delay(5000);
+        stopMilking();
+      }
       break;
-
-      // 15.- Poor milk in tank
-      case 15:
-      break;
-
-      // 16.- Move towards exchange zone (null, use case 9)
-      case 16:
-      break;
-
-      // 17.- Drop terrine
-      case 17:
-      break;
-
-      // 18.- Search door (null, see case 11)
-      case 18:
-      break;
-
-      // 19.- Go to empty terrines zone
-      case 19:
-        turnTo(0);
-        Serial.print("0");
-      break;
-      default:
-        // return 't' meaning no correct value received, resend.
-        Serial.print('t');
     }
-  } */
-  /*
-  clk = millis();
-  Serial.print('R');
-  while(Serial.available() <= 0 && millis() - clk <= 5000)
-  {
-    lcd.setCursor(0,0);
-    lcd.print("Waiting...");
   }
-  if(Serial.available() > 0)
-  {
-    int angle = Serial.readString().toInt();
-    lcd.clear();
-    lcd.setCursor(12,0);
-    lcd.print("0:");
-    lcd.print(angle);
-    if(angle > 0)
-      turnRight(angle);
-    else
-      turnLeft(angle);
-  }
-  else
-  {
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("Timeout!");
-  }
-  */
 }
 
 void addFrontStep()
 {
   stepsF++;
 }
-
-/*
-void addBackStep()
-{
-  stepsB++;
-}
-*/
